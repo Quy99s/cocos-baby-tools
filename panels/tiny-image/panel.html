@@ -32,9 +32,8 @@
       </div>
       <div class="api-key-info">
         <div class="api-info-text">
-          <strong>ℹ️ Info:</strong> Get your free API key from 
+          <strong>ℹ️ Info:</strong> Get API key 
           <a href="#" id="apiLink" class="api-link">tinypng.com/developers</a>. 
-          The key will be saved locally for future use.
         </div>
         <button id="btnCheckUsage" class="small usage-btn">
           <span>📊</span>
@@ -46,72 +45,146 @@
 
   <!-- Folder Selection Section -->
   <div class="scan-section">
+    <!-- Folder Settings Header -->
+    <div class="folder-header">
+      <h3>📁 Folder Configuration</h3>
+      <button id="btnFolderSettings" class="settings-btn" title="Folder Settings">⚙️</button>
+    </div>
+
+    <!-- Settings Panel -->
+    <div id="folderSettingsPanel" class="settings-panel" style="display: none;">
+      <div class="settings-grid">
+        <div class="setting-item">
+          <label>
+            <input type="checkbox" id="rememberFolders"> 
+            Remember last used folders
+          </label>
+        </div>
+        <div class="setting-item">
+          <label>
+            <input type="checkbox" id="skipEmptyCheck"> 
+            Skip empty folder validation
+          </label>
+        </div>
+        <div class="setting-item">
+          <label>
+            <input type="checkbox" id="autoCreateOutput"> 
+            Auto-create "optimize_N" subfolder
+          </label>
+        </div>
+      </div>
+      <div class="settings-actions">
+        <button id="btnResetFolderSettings" class="danger-btn small">Reset Settings</button>
+      </div>
+    </div>
+
     <div class="scan-input">
       <span class="scan-label">📁 Source:</span>
-      <ui-asset droppable="cc.Asset" id="folderAsset" placeholder="Drag folder here or click to browse..."></ui-asset>
+      <div class="folder-input-container">
+        <ui-asset droppable="cc.Asset" id="folderAsset" placeholder="Drag folder here or click to browse..."></ui-asset>
+        <div id="sourceFolderStatus" class="folder-status"></div>
+      </div>
     </div>
 
     <div class="scan-input">
       <span class="scan-label">💾 Output:</span>
       <div class="output-folder-container">
         <input type="file" id="outputFolderInput" webkitdirectory style="display: none;" />
-        <button id="btnSelectOutput" class="folder-select">
-          <span>📁</span>
-          <span>Choose Folder</span>
-        </button>
-        <span id="outputFolderPath" class="folder-path">Please select a folder</span>
+        <div class="output-controls">
+          <button id="btnSelectOutput" class="folder-select">
+            <span>📁</span>
+            <span>Choose Folder</span>
+          </button>
+          <button id="btnOpenOutput" class="folder-action" title="Open Folder">📂</button>
+        </div>
+        <div class="output-path-display">
+          <span id="outputFolderPath" class="path-text">No folder selected</span>
+        </div>
+        <div id="outputFolderStatus" class="folder-status"></div>
       </div>
     </div>
 
-    <!-- Image Information Section -->
-    <div class="image-info-section" id="imageInfoSection">
-      <div class="image-info-title">📊 Image Analysis</div>
-      <div class="image-stats-grid" id="imageStatsGrid">
-        <div class="image-stat-item">
-          <div class="stat-icon">📁</div>
-          <div class="stat-content">
-            <div class="stat-number" id="statTotalImages">0</div>
-            <div class="stat-label">Total Images</div>
-          </div>
-        </div>
-        <div class="image-stat-item">
-          <div class="stat-icon">🖼️</div>
-          <div class="stat-content">
-            <div class="stat-number" id="statPngImages">0</div>
-            <div class="stat-label">PNG Files</div>
-          </div>
-        </div>
-        <div class="image-stat-item">
-          <div class="stat-icon">📷</div>
-          <div class="stat-content">
-            <div class="stat-number" id="statJpgImages">0</div>
-            <div class="stat-label">JPG Files</div>
-          </div>
-        </div>
-        <div class="image-stat-item">
-          <div class="stat-icon">🌐</div>
-          <div class="stat-content">
-            <div class="stat-number" id="statWebpImages">0</div>
-            <div class="stat-label">WebP Files</div>
-          </div>
-        </div>
+    <!-- Combined Analysis & Statistics Panel -->
+    <div class="analysis-panel" id="analysisPanel" style="display: none;">
+      <div class="panel-header">
+        <h3>📊 Analysis & Stats</h3>
+        <button id="btnCloseAnalysis" class="close-btn" title="Close Panel">✕</button>
       </div>
+      
+      <div class="panel-content">
+        <!-- Source Analysis -->
+        <div class="analysis-section">
+          <div class="section-title">📁 Source Files</div>
+          <div class="compact-stats-grid">
+            <div class="compact-stat">
+              <span class="stat-icon">📁</span>
+              <span class="stat-value" id="statTotalImages">0</span>
+              <span class="stat-label">Total</span>
+            </div>
+            <div class="compact-stat">
+              <span class="stat-icon">🖼️</span>
+              <span class="stat-value" id="statPngImages">0</span>
+              <span class="stat-label">PNG</span>
+            </div>
+            <div class="compact-stat">
+              <span class="stat-icon">📷</span>
+              <span class="stat-value" id="statJpgImages">0</span>
+              <span class="stat-label">JPG</span>
+            </div>
+            <div class="compact-stat">
+              <span class="stat-icon">🌐</span>
+              <span class="stat-value" id="statWebpImages">0</span>
+              <span class="stat-label">WebP</span>
+            </div>
+          </div>
+        </div>
 
-      <!-- Image Type Selection -->
-      <div class="image-types-section">
-        <div class="image-types-title">🎯 Select Image Types to Optimize</div>
-        <div class="checkbox-grid">
-          <div class="checkbox-item">
-            <input type="checkbox" id="chkPng" checked />
-            <label for="chkPng">🖼️ PNG Files</label>
+        <!-- Image Type Selection -->
+        <div class="selection-section">
+          <div class="section-title">🎯 Select Types</div>
+          <div class="compact-checkbox-grid">
+            <label class="compact-checkbox">
+              <input type="checkbox" id="chkPng" checked />
+              <span class="checkbox-icon">🖼️</span>
+              <span>PNG</span>
+            </label>
+            <label class="compact-checkbox">
+              <input type="checkbox" id="chkJpg" checked />
+              <span class="checkbox-icon">📷</span>
+              <span>JPG</span>
+            </label>
+            <label class="compact-checkbox">
+              <input type="checkbox" id="chkWebp" checked />
+              <span class="checkbox-icon">🌐</span>
+              <span>WebP</span>
+            </label>
           </div>
-          <div class="checkbox-item">
-            <input type="checkbox" id="chkJpg" checked />
-            <label for="chkJpg">📷 JPG/JPEG Files</label>
-          </div>
-          <div class="checkbox-item">
-            <input type="checkbox" id="chkWebp" checked />
-            <label for="chkWebp">🌐 WebP Files</label>
+        </div>
+
+        <!-- Optimization Statistics -->
+        <div class="optimization-section" id="optimizationSection" style="display: none;">
+          <div class="section-title">📈 Results</div>
+          <div class="compact-stats-grid">
+            <div class="compact-stat result-total">
+              <span class="stat-icon">📁</span>
+              <span class="stat-value" id="statTotalAssets">0</span>
+              <span class="stat-label">Total</span>
+            </div>
+            <div class="compact-stat result-success">
+              <span class="stat-icon">✅</span>
+              <span class="stat-value" id="statOptimized">0</span>
+              <span class="stat-label">Done</span>
+            </div>
+            <div class="compact-stat result-error">
+              <span class="stat-icon">❌</span>
+              <span class="stat-value" id="statErrors">0</span>
+              <span class="stat-label">Error</span>
+            </div>
+            <div class="compact-stat result-saved">
+              <span class="stat-icon">💾</span>
+              <span class="stat-value" id="statSavedSize">0 MB</span>
+              <span class="stat-label">Saved</span>
+            </div>
           </div>
         </div>
       </div>
@@ -122,15 +195,17 @@
         <span>🚀</span>
         <span>Run Optimization</span>
       </button>
-      <button id="btnOpenOutput" class="success">
-        <span>📁</span>
-        <span>Open Output</span>
-      </button>
+      <div class="run-options">
+        <label>
+          <input type="checkbox" id="processAnyway"> 
+          Process even if validation fails
+        </label>
+      </div>
     </div>
   </div>
 
   <!-- Progress Section -->
-  <div class="progress-container" id="progressContainer">
+  <div class="progress-container" id="progressContainer" style="display: none;">
     <div class="progress-bar">
       <div class="progress-fill" id="progressFill"></div>
     </div>
@@ -163,13 +238,6 @@
         <div class="stat-content">
           <div class="stat-number" id="statErrors">0</div>
           <div class="stat-label">Errors</div>
-        </div>
-      </div>
-      <div class="stat-item stat-saved">
-        <div class="stat-icon">�</div>
-        <div class="stat-content">
-          <div class="stat-number" id="statSavedSize">0 MB</div>
-          <div class="stat-label">Size Saved</div>
         </div>
       </div>
     </div>

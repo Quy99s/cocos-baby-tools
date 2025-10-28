@@ -28,18 +28,19 @@ exports.$ = {
     apiLink: '#apiLink',
     outputFolderInput: '#outputFolderInput',
     btnSelectOutput: '#btnSelectOutput',
-    outputFolderPath: '#outputFolderPath',
     btnOpenOutput: '#btnOpenOutput',
+    outputFolderPath: '#outputFolderPath',
     progressContainer: '#progressContainer',
     progressFill: '#progressFill',
     progressText: '#progressText',
-    statsSection: '#statsSection',
     statTotalAssets: '#statTotalAssets',
     statOptimized: '#statOptimized',
     statErrors: '#statErrors',
     statSavedSize: '#statSavedSize',
-    // Image info section
-    imageInfoSection: '#imageInfoSection',
+    // Combined analysis panel
+    analysisPanel: '#analysisPanel',
+    btnCloseAnalysis: '#btnCloseAnalysis',
+    optimizationSection: '#optimizationSection',
     statTotalImages: '#statTotalImages',
     statPngImages: '#statPngImages',
     statJpgImages: '#statJpgImages',
@@ -47,7 +48,17 @@ exports.$ = {
     // Image type checkboxes
     chkPng: '#chkPng',
     chkJpg: '#chkJpg',
-    chkWebp: '#chkWebp'
+    chkWebp: '#chkWebp',
+    // New folder management elements
+    btnFolderSettings: '#btnFolderSettings',
+    folderSettingsPanel: '#folderSettingsPanel',
+    rememberFolders: '#rememberFolders',
+    skipEmptyCheck: '#skipEmptyCheck',
+    autoCreateOutput: '#autoCreateOutput',
+    btnResetFolderSettings: '#btnResetFolderSettings',
+    sourceFolderStatus: '#sourceFolderStatus',
+    outputFolderStatus: '#outputFolderStatus',
+    processAnyway: '#processAnyway'
 }
 
 exports.methods = {
@@ -63,9 +74,223 @@ exports.methods = {
     // Custom output folder path
     customOutputPath: null,
 
+    // Folder settings configuration key
+    FOLDER_CONFIG_KEY: 'tinyimage-folder-config',
+
     // Đường dẫn file cấu hình API key
     getConfigPath() {
         return path.join(Editor.Project.path, 'temp', 'tinypng-config.json');
+    },
+
+    // Folder Configuration Management
+    getFolderConfig() {
+        try {
+            const saved = localStorage.getItem(this.FOLDER_CONFIG_KEY);
+            return saved ? JSON.parse(saved) : {
+                rememberFolders: true,
+                skipEmptyCheck: false,
+                autoCreateOutput: true,
+                lastSourceFolder: null,
+                lastOutputFolder: null,
+                projectPath: Editor.Project.path
+            };
+        } catch (error) {
+            return {
+                rememberFolders: true,
+                skipEmptyCheck: false,
+                autoCreateOutput: true,
+                lastSourceFolder: null,
+                lastOutputFolder: null,
+                projectPath: Editor.Project.path
+            };
+        }
+    },
+
+    saveFolderConfig(config) {
+        try {
+            localStorage.setItem(this.FOLDER_CONFIG_KEY, JSON.stringify(config));
+        } catch (error) {
+            this.logMessage(`Failed to save folder settings: ${error.message}`, 'warning');
+        }
+    },
+
+    // Initialize folder settings UI
+    initFolderSettings() {
+        const config = this.getFolderConfig();
+        
+        // Load settings into UI
+        this.$.rememberFolders.checked = config.rememberFolders;
+        this.$.skipEmptyCheck.checked = config.skipEmptyCheck;
+        this.$.autoCreateOutput.checked = config.autoCreateOutput;
+
+        // Auto-load last folders if remember is enabled
+        if (config.rememberFolders) {
+            if (config.lastOutputFolder && fs.existsSync(config.lastOutputFolder)) {
+                this.setOutputFolder(config.lastOutputFolder);
+            }
+        }
+    },
+
+    // Update folder status display
+    updateFolderStatus(element, message, type = 'info') {
+        element.className = `folder-status ${type} show`;
+        element.textContent = message;
+    },
+
+    hideFolderStatus(element) {
+        element.className = 'folder-status';
+        element.textContent = '';
+    },
+
+    updateOutputPathDisplay(message, type = 'info') {
+        if (this.$.outputFolderPath) {
+            this.$.outputFolderPath.textContent = message;
+            this.$.outputFolderPath.className = `path-text ${type}`;
+        }
+    },
+
+    showAnalysisPanel() {
+        this.$.analysisPanel.style.display = 'block';
+        this.$.optimizationSection.style.display = 'none'; // Hide optimization stats initially
+    },
+
+    hideAnalysisPanel() {
+        this.$.analysisPanel.style.display = 'none';
+    },
+
+    showOptimizationStats() {
+        if (this.$.analysisPanel.style.display === 'block') {
+            this.$.optimizationSection.style.display = 'block';
+        }
+    },
+
+    restoreLastOutputFolder() {
+        const config = this.getFolderConfig();
+        if (!config.rememberFolders) {
+            this.logMessage('💡 Tip: Enable "Remember folders" in settings to auto-restore last output folder', 'info');
+            return;
+        }
+
+        if (config.lastOutputFolder && fs.existsSync(config.lastOutputFolder)) {
+            this.originalOutputPath = config.lastOutputFolder;
+            this.setOutputFolder(config.lastOutputFolder);
+            this.logMessage(`🕐 Restored last output folder: ${path.basename(config.lastOutputFolder)}`, 'success');
+        } else if (config.lastOutputFolder) {
+            this.logMessage(`⚠️ Last output folder no longer exists: ${config.lastOutputFolder}`, 'warning');
+        } else {
+            this.logMessage('💡 No previous output folder found. Please select a folder manually.', 'info');
+        }
+    },
+
+    // Get recent output folders (for dropdown in future)
+    getRecentOutputFolders() {
+        const config = this.getFolderConfig();
+        return config.recentOutputFolders || [];
+    },
+
+    addToRecentOutputFolders(folderPath) {
+        const config = this.getFolderConfig();
+        if (!config.recentOutputFolders) {
+            config.recentOutputFolders = [];
+        }
+        
+        // Remove if already exists
+        const index = config.recentOutputFolders.indexOf(folderPath);
+        if (index > -1) {
+            config.recentOutputFolders.splice(index, 1);
+        }
+        
+        // Add to beginning
+        config.recentOutputFolders.unshift(folderPath);
+        
+        // Keep only last 5 folders
+        if (config.recentOutputFolders.length > 5) {
+            config.recentOutputFolders.pop();
+        }
+        
+        this.saveFolderConfig(config);
+    },
+
+    // Smart folder validation
+    async smartValidateSource() {
+        const config = this.getFolderConfig();
+        
+        const isValid = await this.validateSourceFolder();
+        if (!isValid && !config.skipEmptyCheck) {
+            this.updateFolderStatus(this.$.sourceFolderStatus, 
+                'No images found in source folder', 'warning');
+            return false;
+        } else if (config.skipEmptyCheck) {
+            this.updateFolderStatus(this.$.sourceFolderStatus, 
+                'Validation skipped - ready to process', 'info');
+            return true;
+        }
+        
+        return isValid;
+    },
+
+    smartValidateOutput() {
+        const config = this.getFolderConfig();
+        
+        if (!this.customOutputPath) {
+            this.updateFolderStatus(this.$.outputFolderStatus, 
+                'Please select an output folder', 'warning');
+            return false;
+        }
+
+        if (config.skipEmptyCheck) {
+            this.updateFolderStatus(this.$.outputFolderStatus, 
+                'Ready to process (validation skipped)', 'info');
+            return true;
+        }
+
+        // Check if folder exists
+        if (!fs.existsSync(this.customOutputPath)) {
+            this.updateFolderStatus(this.$.outputFolderStatus, 
+                'Output folder does not exist', 'error');
+            return false;
+        }
+
+        // Check if empty (unless auto-create is enabled)
+        // Use original output path for checking, not the auto-created path
+        const checkPath = this.originalOutputPath || this.customOutputPath;
+        const files = this.getAllFilesInDirectory(checkPath);
+        if (files.length > 0) {
+            if (config.autoCreateOutput) {
+                return true;
+            } else {
+                this.updateFolderStatus(this.$.outputFolderStatus, 
+                    `Folder not empty (${files.length} files)`, 'warning');
+                return false;
+            }
+        }
+
+        this.updateFolderStatus(this.$.outputFolderStatus, 
+            'Empty folder - ready to process', 'success');
+        return true;
+    },
+
+    // Enhanced output folder selection
+    setOutputFolder(folderPath) {
+        this.customOutputPath = folderPath;
+        
+        // Store the original user-selected folder to avoid nested creation
+        if (!this.originalOutputPath) {
+            this.originalOutputPath = folderPath;
+        }
+        
+        this.smartValidateOutput();
+        
+        // Save only the original folder, not the auto-created ones
+        const config = this.getFolderConfig();
+        config.lastOutputFolder = this.originalOutputPath;
+        this.addToRecentOutputFolders(this.originalOutputPath);
+        this.saveFolderConfig(config);
+        
+        // Update path display
+        this.updateOutputPathDisplay(folderPath, 'success');
+        
+        this.logMessage(`💾 Output folder set: ${path.basename(folderPath)}`, 'info');
     },
 
     // Lưu API key vào file cấu hình
@@ -167,6 +392,10 @@ exports.methods = {
     clearLog() {
         this.$.log.innerText = ''
         this.resetStats()
+        // Hide analysis panel when clearing
+        this.hideAnalysisPanel()
+        // Clear folder asset
+        this.$.folderAsset.value = null
     },
 
     // Progress bar methods
@@ -193,9 +422,10 @@ exports.methods = {
             isRunning: false
         }
         this.updateStatsDisplay()
-        this.$.statsSection.classList.remove('show')
-        // Reset image info as well
-        this.$.imageInfoSection.classList.remove('show')
+        // Hide optimization section when resetting
+        if (this.$.optimizationSection) {
+            this.$.optimizationSection.style.display = 'none'
+        }
     },
 
     updateStatsDisplay() {
@@ -206,8 +436,9 @@ exports.methods = {
         const savedMB = (this.stats.totalSavedBytes / 1024 / 1024).toFixed(2)
         this.$.statSavedSize.innerText = `${savedMB} MB`
         
-        if (this.stats.totalAssets > 0) {
-            this.$.statsSection.classList.add('show')
+        // Show optimization section if there are stats to display
+        if (this.stats.totalAssets > 0 && this.$.optimizationSection) {
+            this.$.optimizationSection.style.display = 'block'
         }
     },
 
@@ -227,13 +458,20 @@ exports.methods = {
                 const folderPath = result.filePaths[0];
                 this.logMessage(`🔍 Checking selected folder: ${folderPath}`, 'info')
                 
-                // Validate that the selected output folder is empty
-                if (this.validateOutputFolder(folderPath)) {
-                    this.customOutputPath = folderPath
-                    this.logMessage(`✅ Empty output folder selected: ${this.customOutputPath}`, 'success')
+                // Reset original path when user selects new folder
+                this.originalOutputPath = folderPath;
+                
+                // Validate that the selected output folder is suitable
+                const validationResult = this.validateOutputFolder(folderPath);
+                if (validationResult) {
+                    // Use the returned path (might be a subfolder if auto-created)
+                    const actualPath = typeof validationResult === 'string' ? validationResult : folderPath;
+                    this.setOutputFolder(actualPath);
+                    this.logMessage(`✅ Output folder selected: ${actualPath}`, 'success')
                 } else {
                     // Reset selection if validation fails
                     this.customOutputPath = null
+                    this.originalOutputPath = null
                 }
             }
         } catch (error) {
@@ -293,13 +531,20 @@ exports.methods = {
             if (folderPath && fs.existsSync(folderPath)) {
                 this.logMessage(`🔍 Checking selected folder: ${folderPath}`, 'info')
                 
-                // Validate that the selected output folder is empty
-                if (this.validateOutputFolder(folderPath)) {
-                    this.customOutputPath = folderPath
-                    this.logMessage(`✅ Empty output folder selected: ${path.basename(this.customOutputPath)}`, 'success')
+                // Reset original path when user selects new folder via file input
+                this.originalOutputPath = folderPath;
+                
+                // Validate that the selected output folder is suitable
+                const validationResult = this.validateOutputFolder(folderPath);
+                if (validationResult) {
+                    // Use the returned path (might be a subfolder if auto-created)
+                    const actualPath = typeof validationResult === 'string' ? validationResult : folderPath;
+                    this.setOutputFolder(actualPath);
+                    this.logMessage(`✅ Output folder selected: ${path.basename(actualPath)}`, 'success')
                 } else {
                     // Reset selection if validation fails
                     this.customOutputPath = null
+                    this.originalOutputPath = null
                     this.$.outputFolderInput.value = ''
                 }
             } else {
@@ -311,12 +556,34 @@ exports.methods = {
 
 
 
-    // Validate output folder (must be empty) - with visual feedback only
+    // Generate unique folder name with sequential numbering
+    generateUniqueOptimizeFolderName(parentDir) {
+        // First try "optimize"
+        let folderName = 'optimize';
+        if (!fs.existsSync(path.join(parentDir, folderName))) {
+            return folderName;
+        }
+        
+        // If "optimize" exists, try optimize_1, optimize_2, etc.
+        let counter = 1;
+        folderName = `optimize_${counter}`;
+        
+        // Find next available number
+        while (fs.existsSync(path.join(parentDir, folderName))) {
+            counter++;
+            folderName = `optimize_${counter}`;
+        }
+        
+        return folderName;
+    },
+
+    // Enhanced validate output folder with smart options
     validateOutputFolder(folderPath) {
+        const config = this.getFolderConfig();
+        
         try {
             // Check if folder exists
             if (!fs.existsSync(folderPath)) {
-                this.updateOutputPathDisplay('❌ Folder not found', 'error')
                 this.logMessage(`❌ Output folder does not exist: ${folderPath}`, 'error')
                 return false
             }
@@ -324,53 +591,40 @@ exports.methods = {
             // Check if it's actually a directory
             const stat = fs.statSync(folderPath)
             if (!stat.isDirectory()) {
-                this.updateOutputPathDisplay('❌ Not a directory', 'error')
                 this.logMessage(`❌ Selected path is not a directory: ${folderPath}`, 'error')
                 return false
+            }
+
+            // Skip empty check if setting is enabled
+            if (config.skipEmptyCheck) {
+                this.logMessage(`⚡ Validation skipped - using folder: ${path.basename(folderPath)}`, 'info')
+                return true
             }
 
             // Check if folder is empty
             const allFiles = this.getAllFilesInDirectory(folderPath)
             
             if (allFiles.length > 0) {
-                this.updateOutputPathDisplay(`❌ Folder not empty (${allFiles.length} files)`, 'error')
-                this.logMessage(`❌ Output folder "${path.basename(folderPath)}" is not empty (contains ${allFiles.length} file(s)). Please select an empty folder.`, 'warning')
-                return false
+                // Auto-create sibling folder if enabled
+                if (config.autoCreateOutput) {
+                    return true; // Allow to continue
+                } else {
+                    this.logMessage(`❌ Output folder "${path.basename(folderPath)}" is not empty (contains ${allFiles.length} file(s)). Please select an empty folder or enable auto-create.`, 'warning')
+                    return false
+                }
             }
 
             // Folder is valid
-            this.updateOutputPathDisplay(folderPath, 'success')
+            this.logMessage(`✅ Output folder "${path.basename(folderPath)}" is valid and ready.`, 'success')
             return true
 
         } catch (error) {
-            this.updateOutputPathDisplay('❌ Validation error', 'error')
             this.logMessage(`Error validating output folder: ${error.message}`, 'error')
             return false
         }
     },
 
-    // Update output path display with visual feedback
-    updateOutputPathDisplay(text, status = 'normal') {
-        const pathElement = this.$.outputFolderPath
-        
-        // Reset classes
-        pathElement.classList.remove('error', 'success', 'normal')
-        
-        // Add appropriate class and text
-        if (status === 'error') {
-            pathElement.classList.add('error')
-            pathElement.innerText = text
-            pathElement.title = text
-        } else if (status === 'success') {
-            pathElement.classList.add('success')
-            pathElement.innerText = path.basename(text)
-            pathElement.title = text
-        } else {
-            pathElement.classList.add('normal')
-            pathElement.innerText = text
-            pathElement.title = text
-        }
-    },
+
 
 
 
@@ -430,8 +684,6 @@ exports.methods = {
     async validateSourceFolder() {
         const folderAssetValue = this.$.folderAsset.value;
         if (!folderAssetValue) {
-            // Hide image info section when no folder selected
-            this.$.imageInfoSection.classList.remove('show')
             return false; // Source folder is required
         }
 
@@ -440,7 +692,6 @@ exports.methods = {
         
         if (!folderInfo?.file) {
             this.logMessage('Unable to get source folder information.', 'error')
-            this.$.imageInfoSection.classList.remove('show')
             return false;
         }
 
@@ -462,7 +713,6 @@ exports.methods = {
 
         } catch (error) {
             this.logMessage(`Error validating source folder: ${error.message}`, 'error');
-            this.$.imageInfoSection.classList.remove('show')
             return false;
         }
     },
@@ -573,16 +823,12 @@ exports.methods = {
         this.$.statWebpImages.textContent = stats.webp
 
         if (stats.total > 0) {
-            this.$.imageInfoSection.classList.add('show')
-            
             // Log detailed information
             const totalSizeMB = (stats.details.reduce((sum, img) => sum + img.size, 0) / 1024 / 1024).toFixed(2)
             this.logMessage(`📊 Found ${stats.total} images (${totalSizeMB}MB total):`, 'info')
             this.logMessage(`   🖼️ PNG: ${stats.png} files`, 'info')
             this.logMessage(`   📷 JPG/JPEG: ${stats.jpg} files`, 'info')
             this.logMessage(`   🌐 WebP: ${stats.webp} files`, 'info')
-        } else {
-            this.$.imageInfoSection.classList.remove('show')
         }
     },
 
@@ -656,6 +902,9 @@ exports.methods = {
             return
         }
 
+        // Show optimization stats section
+        this.showOptimizationStats();
+
         // Validate source folder (must contain images)
         const isValidSourceFolder = await this.validateSourceFolder();
         if (!isValidSourceFolder) {
@@ -672,15 +921,26 @@ exports.methods = {
             return
         }
 
-        // Validate that output folder is selected and valid
+        // Smart validation with bypass option
+        const config = this.getFolderConfig();
+        const processAnyway = this.$.processAnyway.checked;
+        
+        // Validate output folder
         if (!this.customOutputPath) {
             this.updateOutputPathDisplay('❌ Please select a folder', 'error')
             this.logMessage('❌ Please select an output folder to save optimized images.', 'warning')
             return;
         }
 
-        if (!this.validateOutputFolder(this.customOutputPath)) {
-            return; // Validation failed, error already shown in display
+        if (!processAnyway && !this.smartValidateOutput()) {
+            this.logMessage('❌ Output folder validation failed. Check "Process anyway" to bypass validation.', 'warning');
+            return;
+        }
+
+        // Validate source folder
+        if (!processAnyway && !(await this.smartValidateSource())) {
+            this.logMessage('❌ Source folder validation failed. Check "Process anyway" to bypass validation.', 'warning');
+            return;
         }
 
         // Kiểm tra API key
@@ -709,8 +969,30 @@ exports.methods = {
 
             // Source folder is the selected folder (contains images)
             const srcFolder = folderInfo.file
-            // Output folder is the user-selected empty folder (required)
-            const outFolder = this.customOutputPath
+            let outFolder = this.customOutputPath
+            
+            // Check if we need to auto-create subfolder inside ORIGINAL OUTPUT location
+            const config = this.getFolderConfig();
+            if (config.autoCreateOutput) {
+                // Use original output folder, not the current customOutputPath
+                const baseOutputFolder = this.originalOutputPath || outFolder;
+                const files = this.getAllFilesInDirectory(baseOutputFolder);
+                if (files.length > 0) {
+                    // Create subfolder inside the original output folder
+                    const uniqueFolderName = this.generateUniqueOptimizeFolderName(baseOutputFolder);
+                    const newOutputPath = path.join(baseOutputFolder, uniqueFolderName);
+                    
+                    try {
+                        fs.mkdirSync(newOutputPath, { recursive: true });
+                        outFolder = newOutputPath;
+                        this.customOutputPath = newOutputPath;
+                        this.logMessage(`📁 Auto-created subfolder: ${path.basename(baseOutputFolder)}/${uniqueFolderName}`, 'success');
+                    } catch (error) {
+                        this.logMessage(`Failed to create subfolder: ${error.message}`, 'error');
+                        return;
+                    }
+                }
+            }
 
             this.logMessage(`📁 Source folder: ${srcFolder}`)
             this.logMessage(`📁 Output folder: ${outFolder}`)
@@ -854,6 +1136,9 @@ exports.ready = function () {
     this.resetStats()
     this.showProgress(false)
     
+    // Initialize folder settings and auto-load configurations
+    this.initFolderSettings()
+    
     // Auto-load saved API key on startup (without showing messages)
     this.loadApiKey(false)
 
@@ -868,6 +1153,46 @@ exports.ready = function () {
         this.openApiWebsite()
     })
     
+    // Folder settings panel toggle
+    this.$.btnFolderSettings.addEventListener('click', () => {
+        const panel = this.$.folderSettingsPanel;
+        const isVisible = panel.style.display !== 'none';
+        panel.style.display = isVisible ? 'none' : 'block';
+    })
+
+    // Settings checkboxes
+    this.$.rememberFolders.addEventListener('change', (e) => {
+        const config = this.getFolderConfig();
+        config.rememberFolders = e.target.checked;
+        this.saveFolderConfig(config);
+    })
+
+    this.$.skipEmptyCheck.addEventListener('change', (e) => {
+        const config = this.getFolderConfig();
+        config.skipEmptyCheck = e.target.checked;
+        this.saveFolderConfig(config);
+        
+        // Re-validate folders when this setting changes
+        this.smartValidateOutput();
+        this.smartValidateSource();
+    })
+
+    this.$.autoCreateOutput.addEventListener('change', (e) => {
+        const config = this.getFolderConfig();
+        config.autoCreateOutput = e.target.checked;
+        this.saveFolderConfig(config);
+    })
+
+    this.$.btnResetFolderSettings.addEventListener('click', () => {
+        if (confirm('Reset all folder settings to default?')) {
+            localStorage.removeItem(this.FOLDER_CONFIG_KEY);
+            this.initFolderSettings();
+            this.logMessage('✅ Folder settings reset to default', 'success');
+        }
+    })
+
+
+    
     // Output folder selection
     this.$.btnSelectOutput.addEventListener('click', () => this.selectOutputFolder())
     this.$.outputFolderInput.addEventListener('change', (e) => this.handleOutputFolderSelect(e))
@@ -877,8 +1202,17 @@ exports.ready = function () {
     this.$.folderAsset.addEventListener('change', () => {
         // Small delay to ensure the value is set
         setTimeout(() => {
-            this.validateSourceFolder()
+            this.smartValidateSource()
+            // Show analysis panel when asset is selected
+            if (this.$.folderAsset.value) {
+                this.showAnalysisPanel()
+            }
         }, 100)
+    })
+
+    // Analysis panel close button
+    this.$.btnCloseAnalysis.addEventListener('click', () => {
+        this.hideAnalysisPanel()
     })
 
     // Image type checkbox changes
@@ -896,5 +1230,13 @@ exports.ready = function () {
     // Initialize output folder display
     this.updateOutputPathDisplay('❌ Please select a folder', 'error')
     
-    console.log('TinyPNG Optimizer panel ready!')
+    // Test log message to ensure log area is working
+    this.logMessage('🚀 TinyPNG Optimizer ready! Select source folder to begin.', 'info');
+    
+    // Auto-restore last output folder if remember setting is enabled
+    setTimeout(() => {
+        this.restoreLastOutputFolder();
+    }, 500);
+    
+    console.log('TinyPNG Optimizer panel ready with smart OUTPUT folder management!')
 }
