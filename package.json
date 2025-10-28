@@ -7,13 +7,16 @@
     "panels": {
         "tiny-image": {
             "title": "TinyPNG Auto Optimizer",
-            "main": "./panels/tiny-image/index.js",
+            "main": "./panels/tiny-image/panel.js",
             "type": "dockable",
             "size": {
                 "width": 500,
                 "height": 800,
                 "min-width": 400,
                 "min-height": 700
+            },
+            "flags": {
+                "alwaysOnTop": true
             }
         },
         "check-unused-assets": {
@@ -25,6 +28,9 @@
                 "height": 800,
                 "min-width": 400,
                 "min-height": 700
+            },
+            "flags": {
+                "alwaysOnTop": true
             }
         }
     },

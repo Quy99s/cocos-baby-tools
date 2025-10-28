@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="./panel.css" />
+</head>
+<body>
+  <div class="header">
+    <h2 class="title">
+      <span>🖼️</span>
+      <span>TinyPNG Auto Optimizer</span>
+    </h2>
+  </div>
+
+  <!-- API Key Section -->
+  <div class="main-section">
+    <div class="input-group">
+      <div class="folder-input-row">
+        <label class="input-label" for="apiKeyInput">
+          <span>🔑</span>
+          <span>API Key:</span>
+        </label>
+        <input type="password" id="apiKeyInput" placeholder="Enter your TinyPNG API key..." />
+        <button id="btnSaveKey" class="small">
+          <span>💾</span>
+          <span>Save</span>
+        </button>
+        <button id="btnLoadKey" class="small">
+          <span>📂</span>
+          <span>Load</span>
+        </button>
+      </div>
+      <div class="api-key-info">
+        <div class="api-info-text">
+          <strong>ℹ️ Info:</strong> Get your free API key from 
+          <a href="#" id="apiLink" class="api-link">tinypng.com/developers</a>. 
+          The key will be saved locally for future use.
+        </div>
+        <button id="btnCheckUsage" class="small usage-btn">
+          <span>📊</span>
+          <span>Check Usage</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Folder Selection Section -->
+  <div class="scan-section">
+    <div class="scan-input">
+      <span class="scan-label">📁 Source:</span>
+      <ui-asset droppable="cc.Asset" id="folderAsset" placeholder="Drag folder here or click to browse..."></ui-asset>
+    </div>
+
+    <div class="scan-input">
+      <span class="scan-label">💾 Output:</span>
+      <div class="output-folder-container">
+        <input type="file" id="outputFolderInput" webkitdirectory style="display: none;" />
+        <button id="btnSelectOutput" class="folder-select">
+          <span>📁</span>
+          <span>Choose Folder</span>
+        </button>
+        <span id="outputFolderPath" class="folder-path">Please select a folder</span>
+      </div>
+    </div>
+
+    <!-- Image Information Section -->
+    <div class="image-info-section" id="imageInfoSection">
+      <div class="image-info-title">📊 Image Analysis</div>
+      <div class="image-stats-grid" id="imageStatsGrid">
+        <div class="image-stat-item">
+          <div class="stat-icon">📁</div>
+          <div class="stat-content">
+            <div class="stat-number" id="statTotalImages">0</div>
+            <div class="stat-label">Total Images</div>
+          </div>
+        </div>
+        <div class="image-stat-item">
+          <div class="stat-icon">🖼️</div>
+          <div class="stat-content">
+            <div class="stat-number" id="statPngImages">0</div>
+            <div class="stat-label">PNG Files</div>
+          </div>
+        </div>
+        <div class="image-stat-item">
+          <div class="stat-icon">📷</div>
+          <div class="stat-content">
+            <div class="stat-number" id="statJpgImages">0</div>
+            <div class="stat-label">JPG Files</div>
+          </div>
+        </div>
+        <div class="image-stat-item">
+          <div class="stat-icon">🌐</div>
+          <div class="stat-content">
+            <div class="stat-number" id="statWebpImages">0</div>
+            <div class="stat-label">WebP Files</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Image Type Selection -->
+      <div class="image-types-section">
+        <div class="image-types-title">🎯 Select Image Types to Optimize</div>
+        <div class="checkbox-grid">
+          <div class="checkbox-item">
+            <input type="checkbox" id="chkPng" checked />
+            <label for="chkPng">🖼️ PNG Files</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="chkJpg" checked />
+            <label for="chkJpg">📷 JPG/JPEG Files</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="chkWebp" checked />
+            <label for="chkWebp">🌐 WebP Files</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-controls">
+      <button id="btnRun" class="primary">
+        <span>🚀</span>
+        <span>Run Optimization</span>
+      </button>
+      <button id="btnOpenOutput" class="success">
+        <span>📁</span>
+        <span>Open Output</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Progress Section -->
+  <div class="progress-container" id="progressContainer">
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-text" id="progressText">Ready to optimize...</div>
+  </div>
+
+  <!-- Statistics Section -->
+  <div class="stats-section" id="statsSection">
+    <div class="stats-title">
+      <span>📊</span>
+      <span>Optimization Statistics</span>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-item stat-total">
+        <div class="stat-icon">📁</div>
+        <div class="stat-content">
+          <div class="stat-number" id="statTotalAssets">0</div>
+          <div class="stat-label">Total Assets</div>
+        </div>
+      </div>
+      <div class="stat-item stat-success">
+        <div class="stat-icon">✅</div>
+        <div class="stat-content">
+          <div class="stat-number" id="statOptimized">0</div>
+          <div class="stat-label">Optimized</div>
+        </div>
+      </div>
+      <div class="stat-item stat-error">
+        <div class="stat-icon">❌</div>
+        <div class="stat-content">
+          <div class="stat-number" id="statErrors">0</div>
+          <div class="stat-label">Errors</div>
+        </div>
+      </div>
+      <div class="stat-item stat-saved">
+        <div class="stat-icon">�</div>
+        <div class="stat-content">
+          <div class="stat-number" id="statSavedSize">0 MB</div>
+          <div class="stat-label">Size Saved</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Log Section -->
+  <div class="results-section">
+    <div class="results-header">
+      <span>📝 Optimization Log</span>
+      <div class="results-controls">
+        <button id="btnClearLog" class="small">🧹 Clear</button>
+      </div>
+    </div>
+    <div class="results-body" id="log"></div>
+  </div>
+</body>
+</html>
