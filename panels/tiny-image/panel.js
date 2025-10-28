@@ -27,6 +27,9 @@ exports.$ = {
     btnLoadKey: '#btnLoadKey',
     apiLink: '#apiLink',
     outputFolderInput: '#outputFolderInput',
+    inputFolderInput: '#inputFolderInput',
+    btnSelectInput: '#btnSelectInput',
+    inputFolderPath: '#inputFolderPath',
     btnSelectOutput: '#btnSelectOutput',
     btnOpenOutput: '#btnOpenOutput',
     outputFolderPath: '#outputFolderPath',
@@ -39,7 +42,6 @@ exports.$ = {
     statSavedSize: '#statSavedSize',
     // Combined analysis panel
     analysisPanel: '#analysisPanel',
-    btnCloseAnalysis: '#btnCloseAnalysis',
     optimizationSection: '#optimizationSection',
     statTotalImages: '#statTotalImages',
     statPngImages: '#statPngImages',
@@ -56,9 +58,7 @@ exports.$ = {
     skipEmptyCheck: '#skipEmptyCheck',
     autoCreateOutput: '#autoCreateOutput',
     btnResetFolderSettings: '#btnResetFolderSettings',
-    sourceFolderStatus: '#sourceFolderStatus',
     outputFolderStatus: '#outputFolderStatus',
-    processAnyway: '#processAnyway'
 }
 
 exports.methods = {
@@ -71,7 +71,8 @@ exports.methods = {
         isRunning: false
     },
 
-    // Custom output folder path
+    // Custom folder paths
+    customInputPath: null,
     customOutputPath: null,
 
     // Folder settings configuration key
@@ -90,7 +91,6 @@ exports.methods = {
                 rememberFolders: true,
                 skipEmptyCheck: false,
                 autoCreateOutput: true,
-                lastSourceFolder: null,
                 lastOutputFolder: null,
                 projectPath: Editor.Project.path
             };
@@ -99,7 +99,6 @@ exports.methods = {
                 rememberFolders: true,
                 skipEmptyCheck: false,
                 autoCreateOutput: true,
-                lastSourceFolder: null,
                 lastOutputFolder: null,
                 projectPath: Editor.Project.path
             };
@@ -123,11 +122,9 @@ exports.methods = {
         this.$.skipEmptyCheck.checked = config.skipEmptyCheck;
         this.$.autoCreateOutput.checked = config.autoCreateOutput;
 
-        // Auto-load last folders if remember is enabled
-        if (config.rememberFolders) {
-            if (config.lastOutputFolder && fs.existsSync(config.lastOutputFolder)) {
-                this.setOutputFolder(config.lastOutputFolder);
-            }
+        // Auto-load last output folder if remember is enabled
+        if (config.rememberFolders && config.lastOutputFolder && fs.existsSync(config.lastOutputFolder)) {
+            this.setOutputFolder(config.lastOutputFolder);
         }
     },
 
@@ -149,20 +146,13 @@ exports.methods = {
         }
     },
 
-    showAnalysisPanel() {
-        this.$.analysisPanel.style.display = 'block';
-        this.$.optimizationSection.style.display = 'none'; // Hide optimization stats initially
-    },
 
-    hideAnalysisPanel() {
-        this.$.analysisPanel.style.display = 'none';
-    },
 
-    showOptimizationStats() {
-        if (this.$.analysisPanel.style.display === 'block') {
-            this.$.optimizationSection.style.display = 'block';
-        }
-    },
+
+
+
+
+
 
     restoreLastOutputFolder() {
         const config = this.getFolderConfig();
@@ -217,12 +207,11 @@ exports.methods = {
         
         const isValid = await this.validateSourceFolder();
         if (!isValid && !config.skipEmptyCheck) {
-            this.updateFolderStatus(this.$.sourceFolderStatus, 
-                'No images found in source folder', 'warning');
+            this.logMessage('⚠️ No images found in source folder', 'warning');
+            
             return false;
         } else if (config.skipEmptyCheck) {
-            this.updateFolderStatus(this.$.sourceFolderStatus, 
-                'Validation skipped - ready to process', 'info');
+            this.logMessage('ℹ️ Validation skipped - ready to process', 'info');
             return true;
         }
         
@@ -392,10 +381,6 @@ exports.methods = {
     clearLog() {
         this.$.log.innerText = ''
         this.resetStats()
-        // Hide analysis panel when clearing
-        this.hideAnalysisPanel()
-        // Clear folder asset
-        this.$.folderAsset.value = null
     },
 
     // Progress bar methods
@@ -439,6 +424,70 @@ exports.methods = {
         // Show optimization section if there are stats to display
         if (this.stats.totalAssets > 0 && this.$.optimizationSection) {
             this.$.optimizationSection.style.display = 'block'
+        }
+    },
+
+    // Input folder methods
+    async selectInputFolder() {
+        try {
+            // Use Electron's dialog to select folder
+            const { dialog } = require('electron').remote || require('@electron/remote');
+            
+            const result = await dialog.showOpenDialog({
+                title: 'Select Source Folder',
+                properties: ['openDirectory'],
+                message: 'Choose folder containing images to optimize'
+            });
+
+            if (!result.canceled && result.filePaths.length > 0) {
+                const folderPath = result.filePaths[0];
+                this.logMessage(`🔍 Checking selected folder: ${folderPath}`, 'info')
+                
+                // Set the input folder and validate
+                this.setInputFolder(folderPath);
+                
+                // Analyze images in the folder
+                const imageStats = this.analyzeImagesInFolder(folderPath);
+                if (imageStats.total === 0) {
+                    this.logMessage(`❌ Source folder "${path.basename(folderPath)}" contains no image files. Please select a folder with PNG, JPG, JPEG, or WebP files.`, 'warning');
+                } else {
+                    this.logMessage(`✅ Source folder "${path.basename(folderPath)}" analyzed successfully.`, 'success');
+                }
+                
+                // Update image stats display
+                this.updateImageStats(imageStats);
+            } else {
+                // Reset stats if user cancelled selection
+                this.resetImageStats()
+            }
+        } catch (error) {
+            this.logMessage(`❌ Error selecting input folder: ${error.message}`, 'error')
+            this.resetImageStats()
+        }
+    },
+
+    setInputFolder(folderPath) {
+        this.customInputPath = folderPath;
+        this.$.inputFolderPath.textContent = folderPath;
+        this.$.inputFolderPath.className = 'path-text success';
+        this.$.inputFolderPath.title = folderPath;
+        // Note: Input folder is not saved to config - user can use folderAsset instead
+    },
+
+    handleInputFolderSelect(event) {
+        const files = event.target.files;
+        if (files.length > 0) {
+            // Get the folder path from the first file
+            const folderPath = files[0].webkitRelativePath.split('/')[0];
+            const fullPath = path.dirname(files[0].path || files[0].name);
+            this.setInputFolder(fullPath);
+            
+            // Analyze images
+            const imageStats = this.analyzeImagesInFolder(fullPath);
+            this.updateImageStats(imageStats);
+        } else {
+            // Reset stats if no files selected
+            this.resetImageStats()
         }
     },
 
@@ -636,6 +685,16 @@ exports.methods = {
         this.openFolder(this.customOutputPath)
     },
 
+    openInputFolderExternal() {
+        if (!this.customInputPath) {
+            this.logMessage('❌ No input folder selected. Please choose a folder first.', 'warning')
+            return
+        }
+        this.openFolder(this.customInputPath)
+    },
+
+
+
     openApiWebsite() {
         // Open TinyPNG developers website
         shell.openExternal('https://tinypng.com/developers')
@@ -682,20 +741,27 @@ exports.methods = {
 
     // Validate source folder (must contain images)
     async validateSourceFolder() {
-        const folderAssetValue = this.$.folderAsset.value;
-        if (!folderAssetValue) {
-            return false; // Source folder is required
-        }
-
-        const folderUuid = folderAssetValue.uuid || folderAssetValue._uuid || folderAssetValue;
-        const folderInfo = await this.getAssetInfo(folderUuid);
+        let srcFolder = null;
         
-        if (!folderInfo?.file) {
-            this.logMessage('Unable to get source folder information.', 'error')
-            return false;
-        }
+        // Priority: custom input path first, then folderAsset
+        if (this.customInputPath) {
+            srcFolder = this.customInputPath;
+        } else {
+            const folderAssetValue = this.$.folderAsset.value;
+            if (!folderAssetValue) {
+                return false; // Source folder is required
+            }
 
-        const srcFolder = folderInfo.file;
+            const folderUuid = folderAssetValue.uuid || folderAssetValue._uuid || folderAssetValue;
+            const folderInfo = await this.getAssetInfo(folderUuid);
+            
+            if (!folderInfo?.file) {
+                this.logMessage('Unable to get source folder information.', 'error')
+                return false;
+            }
+            
+            srcFolder = folderInfo.file;
+        }
         
         try {
             // Analyze images in folder
@@ -832,6 +898,14 @@ exports.methods = {
         }
     },
 
+    // Reset image stats về 0
+    resetImageStats() {
+        this.$.statTotalImages.textContent = '0'
+        this.$.statPngImages.textContent = '0'
+        this.$.statJpgImages.textContent = '0'
+        this.$.statWebpImages.textContent = '0'
+    },
+
     // Lấy file ảnh theo loại được chọn
     getSelectedImageTypes() {
         const selectedTypes = []
@@ -902,28 +976,34 @@ exports.methods = {
             return
         }
 
-        // Show optimization stats section
-        this.showOptimizationStats();
-
         // Validate source folder (must contain images)
         const isValidSourceFolder = await this.validateSourceFolder();
         if (!isValidSourceFolder) {
             return; // Validation failed, error already logged
         }
 
-        // Get source folder info
-        const folderAssetValue = this.$.folderAsset.value;
-        const folderUuid = folderAssetValue.uuid || folderAssetValue._uuid || folderAssetValue;
-        const folderInfo = await this.getAssetInfo(folderUuid);
-        
-        if (!folderInfo?.file) {
-            this.logMessage('Unable to get source folder information. Please select a valid folder.', 'error')
-            return
+        // Get source folder info - priority to custom input path
+        let srcFolder = null;
+        if (this.customInputPath) {
+            srcFolder = this.customInputPath;
+        } else {
+            const folderAssetValue = this.$.folderAsset.value;
+            if (!folderAssetValue) {
+                this.logMessage('Please select a source folder.', 'error')
+                return
+            }
+            const folderUuid = folderAssetValue.uuid || folderAssetValue._uuid || folderAssetValue;
+            const folderInfo = await this.getAssetInfo(folderUuid);
+            
+            if (!folderInfo?.file) {
+                this.logMessage('Unable to get source folder information. Please select a valid folder.', 'error')
+                return
+            }
+            srcFolder = folderInfo.file;
         }
 
         // Smart validation with bypass option
         const config = this.getFolderConfig();
-        const processAnyway = this.$.processAnyway.checked;
         
         // Validate output folder
         if (!this.customOutputPath) {
@@ -932,16 +1012,7 @@ exports.methods = {
             return;
         }
 
-        if (!processAnyway && !this.smartValidateOutput()) {
-            this.logMessage('❌ Output folder validation failed. Check "Process anyway" to bypass validation.', 'warning');
-            return;
-        }
 
-        // Validate source folder
-        if (!processAnyway && !(await this.smartValidateSource())) {
-            this.logMessage('❌ Source folder validation failed. Check "Process anyway" to bypass validation.', 'warning');
-            return;
-        }
 
         // Kiểm tra API key
         const apiKey = this.getCurrentApiKey();
@@ -968,7 +1039,7 @@ exports.methods = {
             this.logMessage('Starting TinyPNG optimization process...')
 
             // Source folder is the selected folder (contains images)
-            const srcFolder = folderInfo.file
+            // srcFolder is already defined above
             let outFolder = this.customOutputPath
             
             // Check if we need to auto-create subfolder inside ORIGINAL OUTPUT location
@@ -1159,6 +1230,8 @@ exports.ready = function () {
         const isVisible = panel.style.display !== 'none';
         panel.style.display = isVisible ? 'none' : 'block';
     })
+    
+
 
     // Settings checkboxes
     this.$.rememberFolders.addEventListener('change', (e) => {
@@ -1193,6 +1266,18 @@ exports.ready = function () {
 
 
     
+    // Input folder selection
+    this.$.btnSelectInput.addEventListener('click', () => {
+        // Reset stats when selecting new input folder
+        this.resetImageStats()
+        this.selectInputFolder()
+    })
+    this.$.inputFolderInput.addEventListener('change', (e) => {
+        // Reset stats when folder changes via file input
+        this.resetImageStats()
+        this.handleInputFolderSelect(e)
+    })
+    
     // Output folder selection
     this.$.btnSelectOutput.addEventListener('click', () => this.selectOutputFolder())
     this.$.outputFolderInput.addEventListener('change', (e) => this.handleOutputFolderSelect(e))
@@ -1200,19 +1285,13 @@ exports.ready = function () {
     
     // Source folder change detection - analyze images when folder is selected
     this.$.folderAsset.addEventListener('change', () => {
+        // Reset stats when folder changes
+        this.resetImageStats()
+        
         // Small delay to ensure the value is set
         setTimeout(() => {
             this.smartValidateSource()
-            // Show analysis panel when asset is selected
-            if (this.$.folderAsset.value) {
-                this.showAnalysisPanel()
-            }
         }, 100)
-    })
-
-    // Analysis panel close button
-    this.$.btnCloseAnalysis.addEventListener('click', () => {
-        this.hideAnalysisPanel()
     })
 
     // Image type checkbox changes
