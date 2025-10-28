@@ -1,0 +1,601 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  background: #252525;
+  color: #eee;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  height: 100vh;
+  box-sizing: border-box;
+  overflow: hidden;
+  font-size: 13px;
+}
+
+/* Header - Compact */
+.header {
+  margin-bottom: 10px;
+  border-bottom: 1px solid #444;
+  padding-bottom: 8px;
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Scan Section - Compact */
+.scan-section {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  padding: 8px;
+  margin-bottom: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.scan-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.scan-label {
+  font-weight: 500;
+  min-width: 50px;
+  color: #ccc;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+ui-asset {
+  flex: 1;
+  min-width: 100px;
+}
+
+/* Hint text */
+.search-hint {
+  font-size: 9px;
+  color: #888;
+  margin-left: 56px;
+  margin-top: -4px;
+  margin-bottom: 6px;
+  font-style: italic;
+}
+
+/* Main controls */
+.main-controls {
+  display: flex;
+  gap: 6px;
+}
+
+.main-controls button {
+  flex: 1;
+  min-width: 70px;
+  padding: 4px 8px;
+  font-size: 10px;
+}
+
+/* Options Section - Compact */
+.options-section {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 4px;
+  padding: 6px;
+  margin-bottom: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.options-title {
+  font-size: 10px;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: #fff;
+}
+
+/* Checkbox grid */
+.checkbox-grid {
+  display: flex;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  flex: 1;
+  min-width: 60px;
+  white-space: nowrap;
+}
+
+.checkbox-item input[type="checkbox"] {
+  transform: scale(0.8);
+  flex-shrink: 0;
+}
+
+.checkbox-item label {
+  cursor: pointer;
+  user-select: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Actions Section - Compact */
+.actions-section {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 4px;
+  padding: 6px;
+  margin-bottom: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: none;
+  flex-shrink: 0;
+}
+
+.actions-title {
+  font-size: 10px;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* Actions grid */
+.actions-grid {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.actions-grid button {
+  flex: 1;
+  min-width: 60px;
+  padding: 3px 6px;
+  font-size: 9px;
+}
+
+.temp-info {
+  font-size: 9px;
+  color: #888;
+  padding: 4px 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+  border-left: 2px solid #ffa500;
+}
+
+/* Progress - Compact */
+.progress-container {
+  margin: 6px 0;
+  display: none;
+  flex-shrink: 0;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: #333;
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #4CAF50, #45a049);
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  text-align: center;
+  font-size: 9px;
+  color: #ccc;
+  margin-top: 3px;
+}
+
+/* Results Area - Tree View */
+.results-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #1e1e1e;
+  border-radius: 4px;
+  border: 1px solid #444;
+  overflow: hidden;
+  min-height: 0;
+  margin-bottom: 30px;
+}
+
+.results-header {
+  padding: 6px 10px;
+  background: #2a2a2a;
+  border-bottom: 1px solid #444;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.results-controls {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.results-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 6px;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.scroll-indicator.show {
+  display: block;
+  animation: fadeInOut 1.5s ease-in-out;
+}
+
+@keyframes fadeInOut {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+/* Buttons - Compact */
+button {
+  padding: 4px 8px;
+  background: #404040;
+  border: 1px solid #5a5a5a;
+  color: #fff;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+button:hover:not(:disabled) {
+  background: #4a4a4a;
+  border-color: #6a6a6a;
+  transform: translateY(-1px);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #333;
+  transform: none;
+}
+
+/* Primary - Blue */
+button.primary {
+  background: #2196F3;
+  border-color: #1976D2;
+  box-shadow: 0 1px 3px rgba(33, 150, 243, 0.2);
+}
+
+button.primary:hover:not(:disabled) {
+  background: #1976D2;
+  border-color: #1565C0;
+  box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
+}
+
+/* Warning - Orange */
+button.warning {
+  background: #FF9800;
+  border-color: #F57C00;
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(255, 152, 0, 0.2);
+}
+
+button.warning:hover:not(:disabled) {
+  background: #F57C00;
+  border-color: #E65100;
+  box-shadow: 0 2px 4px rgba(255, 152, 0, 0.3);
+}
+
+/* Danger - Red */
+button.danger {
+  background: #F44336;
+  border-color: #D32F2F;
+  box-shadow: 0 1px 3px rgba(244, 67, 54, 0.2);
+}
+
+button.danger:hover:not(:disabled) {
+  background: #D32F2F;
+  border-color: #C62828;
+  box-shadow: 0 2px 4px rgba(244, 67, 54, 0.3);
+}
+
+/* Success - Green */
+button.success {
+  background: #4CAF50;
+  border-color: #388E3C;
+  box-shadow: 0 1px 3px rgba(76, 175, 80, 0.2);
+}
+
+button.success:hover:not(:disabled) {
+  background: #388E3C;
+  border-color: #2E7D32;
+  box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+}
+
+button.small {
+  padding: 3px 6px;
+  font-size: 9px;
+  min-width: 50px;
+}
+
+/* Summary Info - Compact */
+.summary-info {
+  padding: 4px 10px;
+  background: #2a2a2a;
+  border-bottom: 1px solid #444;
+  font-size: 10px;
+  color: #ccc;
+  display: none;
+  flex-shrink: 0;
+}
+
+.summary-info.show {
+  display: block;
+}
+
+.summary-stats {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.stat-used { color: #4CAF50; }
+.stat-unused { color: #F44336; }
+.stat-total { color: #2196F3; }
+.stat-time { color: #FF9800; }
+
+/* Log Messages - Compact */
+.line {
+  padding: 2px 4px;
+  margin: 1px 0;
+  border-radius: 2px;
+  font-size: 10px;
+  animation: slideInFromTop 0.3s ease-out;
+}
+
+.line.info { color: #2196F3; }
+.line.success { 
+  color: #4CAF50; 
+  background: rgba(76, 175, 80, 0.1);
+}
+.line.warning { 
+  color: #FF9800; 
+  background: rgba(255, 152, 0, 0.1);
+}
+.line.error { 
+  color: #F44336; 
+  background: rgba(244, 67, 54, 0.1);
+}
+
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Tree Structure - Compact */
+.tree-folder {
+  margin: 2px 0;
+}
+
+.tree-folder > summary {
+  font-weight: 500;
+  padding: 3px 6px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  font-size: 11px;
+}
+
+.tree-folder > summary:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.tree-folder[open] > summary {
+  background: rgba(33, 150, 243, 0.2);
+  border-color: #2196F3;
+}
+
+.folder-summary {
+  color: #2196F3;
+  font-size: 9px;
+  font-weight: normal;
+}
+
+.folder-content {
+  margin-left: 12px;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  padding-left: 6px;
+  margin-top: 2px;
+}
+
+/* Asset Items - Compact */
+.asset-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  margin: 1px 0;
+  border-radius: 2px;
+  cursor: text;
+  user-select: text;
+  transition: background 0.2s ease;
+}
+
+.asset-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.asset-item.used {
+  color: #4CAF50;
+  border-left: 2px solid #4CAF50;
+}
+
+.asset-item.unused {
+  color: #F44336;
+  background: rgba(244, 67, 54, 0.08);
+  border-left: 2px solid #F44336;
+}
+
+.asset-icon {
+  width: 12px;
+  text-align: center;
+  font-size: 9px;
+  user-select: none;
+}
+
+.asset-name {
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.asset-uuid {
+  font-size: 8px;
+  color: #888;
+  font-family: 'Courier New', monospace;
+  user-select: text;
+  padding: 1px 2px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.asset-uuid:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ccc;
+}
+
+.asset-refs {
+  font-size: 8px;
+  opacity: 0.7;
+  margin-left: auto;
+  user-select: none;
+}
+
+.reference-list {
+  margin-left: 20px;
+  margin-top: 2px;
+}
+
+.reference-item {
+  font-size: 9px;
+  color: #888;
+  padding: 1px 3px;
+  margin: 1px 0;
+  user-select: text;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+}
+
+/* Selection styles */
+::selection {
+  background: #2196F3;
+  color: white;
+}
+
+/* Responsive - Compact for smaller screens */
+@media (max-width: 400px) {
+  :host {
+    padding: 6px;
+  }
+  
+  .checkbox-item {
+    font-size: 9px;
+    min-width: 55px;
+  }
+  
+  .checkbox-item label {
+    font-size: 9px;
+  }
+  
+  button {
+    font-size: 9px;
+    padding: 3px 6px;
+  }
+  
+  button.small {
+    font-size: 8px;
+    padding: 2px 4px;
+    min-width: 40px;
+  }
+  
+  .scan-label {
+    min-width: 40px;
+    font-size: 10px;
+  }
+  
+  .summary-stats {
+    gap: 8px;
+  }
+  
+  .stat-item {
+    font-size: 9px;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 300px) {
+  .checkbox-grid {
+    gap: 4px;
+  }
+  
+  .main-controls {
+    gap: 4px;
+  }
+  
+  .actions-grid {
+    gap: 4px;
+  }
+  
+  .checkbox-item {
+    min-width: 50px;
+  }
+  
+  .main-controls button {
+    min-width: 50px;
+  }
+  
+  .actions-grid button {
+    min-width: 45px;
+  }
+}

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+</head>
+<body>
+<style>
+  :host {
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    background: #252525;
+    color: #eee;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    height: 100vh;
+    box-sizing: border-box;
+    overflow: hidden;
+    font-size: 13px;
+  }
+
+  .header {
+    margin-bottom: 10px;
+    border-bottom: 1px solid #444;
+    padding-bottom: 8px;
+    flex-shrink: 0;
+  }
+  
+  .title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .main-section {
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+  }
+
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .input-label {
+    font-weight: 500;
+    color: #ccc;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  #folderInput {
+    padding: 8px;
+    background: #333;
+    border: 1px solid #555;
+    color: #fff;
+    border-radius: 4px;
+    font-size: 12px;
+    width: 100%;
+  }
+
+  #folderInput:focus {
+    outline: none;
+    border-color: #2196F3;
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+  }
+
+  button {
+    padding: 8px 16px;
+    background: #2196F3;
+    border: 1px solid #1976D2;
+    color: #fff;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: center;
+  }
+  
+  button:hover:not(:disabled) {
+    background: #1976D2;
+    border-color: #1565C0;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
+  }
+  
+  button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: #555;
+    border-color: #666;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .log-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #1e1e1e;
+    border-radius: 4px;
+    border: 1px solid #444;
+    overflow: hidden;
+    min-height: 0;
+  }
+  
+  .log-header {
+    padding: 8px 12px;
+    background: #2a2a2a;
+    border-bottom: 1px solid #444;
+    font-size: 12px;
+    font-weight: 500;
+    color: #fff;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  
+  #log {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+    font-size: 11px;
+    line-height: 1.4;
+    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: #ccc;
+  }
+
+  .api-key-info {
+    background: rgba(255, 152, 0, 0.1);
+    border: 1px solid rgba(255, 152, 0, 0.3);
+    border-radius: 4px;
+    padding: 8px;
+    margin-bottom: 10px;
+    font-size: 11px;
+    color: #ff9800;
+  }
+
+  .api-key-info strong {
+    color: #fff;
+  }
+
+  /* Scrollbar styling */
+  #log::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  #log::-webkit-scrollbar-track {
+    background: #333;
+  }
+  
+  #log::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 3px;
+  }
+  
+  #log::-webkit-scrollbar-thumb:hover {
+    background: #666;
+  }
+</style>
+
+<div class="header">
+  <h2 class="title">
+    <span>🖼️</span>
+    <span>TinyPNG Auto Optimizer</span>
+  </h2>
+</div>
+
+<div class="api-key-info">
+  <strong>⚠️ API Key Notice:</strong> Remember to replace the API key in the code with your own TinyPNG API key from <strong>tinypng.com/developers</strong>
+</div>
+
+<div class="main-section">
+  <div class="input-group">
+    <label class="input-label" for="folderInput">
+      <span>📁</span>
+      <span>Select Folder to Optimize:</span>
+    </label>
+    <input type="file" id="folderInput" webkitdirectory />
+  </div>
+  
+  <button id="btnRun">
+    <span>🚀</span>
+    <span>Run TinyPNG Optimization</span>
+  </button>
+</div>
+
+<div class="log-section">
+  <div class="log-header">
+    <span>📝</span>
+    <span>Optimization Log</span>
+  </div>
+  <div id="log"></div>
+</div>
+
+</body>
+</html>

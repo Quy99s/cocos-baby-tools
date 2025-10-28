@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="./panel.css" />
+  </head>
+  <body>
+    <div class="header">
+      <h2 class="title">
+        <span>🔍</span>
+        <span>Asset Usage Analyzer</span>
+      </h2>
+    </div>
+
+    <div class="scan-section">
+      <div class="scan-input">
+        <span class="scan-label">📁 Scan:</span>
+        <ui-asset droppable="cc.Asset" id="scanAsset"></ui-asset>
+      </div>
+
+      <div class="scan-input">
+        <span class="scan-label">🔍 Search in:</span>
+        <ui-asset
+          droppable="cc.Asset"
+          id="searchAsset"
+          placeholder="Optional: Choose search scope"
+        ></ui-asset>
+      </div>
+      <div class="search-hint">
+        💡 Leave empty to search entire project, or select folder to limit
+        search scope
+      </div>
+
+      <div class="main-controls">
+        <button id="btnScan" class="primary">🔍 Analyze</button>
+        <button id="btnClear">🧹 Clear</button>
+      </div>
+    </div>
+
+    <div class="options-section">
+      <div class="options-title">Display Options</div>
+      <div class="checkbox-grid">
+        <div class="checkbox-item">
+          <input type="checkbox" id="chkUsed" checked />
+          <label for="chkUsed">✅ Used</label>
+        </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="chkUnused" checked />
+          <label for="chkUnused">❌ Unused</label>
+        </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="chkDetails" />
+          <label for="chkDetails">📋 Details</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions-section" id="actionsSection">
+      <div class="actions-title">
+        <span>⚡</span>
+        <span>Asset Management</span>
+      </div>
+      <div class="actions-grid">
+        <button id="btnMoveUnused" class="warning">📦 Move</button>
+        <button id="btnRestoreTemp" class="success">↩️ Restore</button>
+        <button id="btnDeleteTemp" class="danger">🗑️ Delete</button>
+      </div>
+      <div class="temp-info">
+        <strong>Temp:</strong> <span id="tempFolderPath">...</span>
+      </div>
+    </div>
+
+    <div class="progress-container" id="progressContainer">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-text" id="progressText">Initializing...</div>
+    </div>
+
+    <div class="results-section">
+      <div class="results-header">
+        <span>🌳 Tree View</span>
+        <div class="results-controls">
+          <button id="btnOpenAll" class="small">📂 Expand</button>
+          <button id="btnCloseAll" class="small">📁 Collapse</button>
+        </div>
+      </div>
+      <div class="summary-info" id="summaryInfo">
+        <div class="summary-stats">
+          <div class="stat-item stat-total">
+            <span>📊</span>
+            <span id="statTotal">0</span>
+          </div>
+          <div class="stat-item stat-used">
+            <span>✅</span>
+            <span id="statUsed">0</span>
+          </div>
+          <div class="stat-item stat-unused">
+            <span>❌</span>
+            <span id="statUnused">0</span>
+          </div>
+          <div class="stat-item stat-time">
+            <span>⏱️</span>
+            <span id="statTime">0s</span>
+          </div>
+        </div>
+      </div>
+      <div class="results-body" id="resultsBody"></div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,60 @@
+{
+    "name": "baby-tools",
+    "version": "1.0.0",
+    "description": "Tập hợp các công cụ tiện ích cho dự án",
+    "author": "SaiGon1975",
+    "main": "./main.js",
+    "panels": {
+        "tiny-image": {
+            "title": "TinyPNG Auto Optimizer",
+            "main": "./panels/tiny-image/index.js",
+            "type": "dockable",
+            "size": {
+                "width": 500,
+                "height": 800,
+                "min-width": 400,
+                "min-height": 700
+            }
+        },
+        "check-unused-assets": {
+            "title": "Check Unused Assets",
+            "main": "./panels/check-unused-assets/panel.js",
+            "type": "dockable",
+            "size": {
+                "width": 500,
+                "height": 800,
+                "min-width": 400,
+                "min-height": 700
+            }
+        }
+    },
+    "contributions": {
+        "menu": [
+            {
+                "path": "BabyTools",
+                "label": "🖼️ Tiny Image",
+                "message": "open-tiny-image"
+            },
+            {
+                "path": "BabyTools",
+                "label": "🧹 Check Unused Assets",
+                "message": "open-check-unused-assets"
+            }
+        ],
+        "messages": {
+            "open-tiny-image": {
+                "methods": [
+                    "openTinyImage"
+                ]
+            },
+            "open-check-unused-assets": {
+                "methods": [
+                    "openCheckUnusedAssets"
+                ]
+            }
+        }
+    },
+    "dependencies": {
+        "tinify": "^1.8.2"
+    }
+}
