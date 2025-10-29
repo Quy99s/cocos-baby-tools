@@ -118,3 +118,6 @@ $RECYCLE.BIN/
 # Local configuration files
 config.local.js
 settings.local.json
+
+# Build temps
+build/temp/

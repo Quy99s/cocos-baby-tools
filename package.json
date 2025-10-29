@@ -1,9 +1,18 @@
 {
     "name": "baby-tools",
     "version": "1.0.0",
-    "description": "From SaiGon1975 With Love ❤️",
+    "description": "Cocos Creator Extension: TinyPNG Optimizer & Asset Analyzer",
     "author": "SaiGon1975",
+    "license": "MIT",
     "main": "./main.js",
+    "keywords": [
+        "cocos-creator",
+        "extension",
+        "tinypng",
+        "image-optimization",
+        "asset-analyzer",
+        "game-development"
+    ],
     "panels": {
         "tiny-image": {
             "title": "TinyPNG Auto Optimizer",
@@ -63,7 +72,12 @@
     "dependencies": {
         "tinify": "^1.8.2"
     },
+    "devDependencies": {},
     "scripts": {
-        "build": "bash build.sh"
+        "build": "bash build.sh",
+        "clean": "rm -rf build/*.zip build/temp"
+    },
+    "engines": {
+        "node": ">=12.0.0"
     }
 }
