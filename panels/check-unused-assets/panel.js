@@ -3,21 +3,134 @@
 const fs = require('fs')
 const path = require('path')
 
+// LRU Cache implementation for better memory management with large projects
+class LRUCache {
+  constructor(maxSize, maxMemory) {
+    this.cache = new Map()
+    this.maxSize = maxSize
+    this.maxMemory = maxMemory
+    this.memoryEstimate = 0
+  }
+
+  get(key) {
+    if (!this.cache.has(key)) return undefined
+
+    // Move to end (most recently used)
+    const value = this.cache.get(key)
+    this.cache.delete(key)
+    this.cache.set(key, value)
+    return value
+  }
+
+  set(key, value) {
+    // If key exists, remove it first
+    if (this.cache.has(key)) {
+      const oldValue = this.cache.get(key)
+      this.memoryEstimate -= (oldValue?.length || 0) * 2
+      this.cache.delete(key)
+    }
+
+    // Remove least recently used items if cache is full
+    while (this.cache.size >= this.maxSize) {
+      const firstKey = this.cache.keys().next().value
+      const firstValue = this.cache.get(firstKey)
+      this.cache.delete(firstKey)
+      this.memoryEstimate -= (firstValue?.length || 0) * 2
+    }
+
+    // If memory would exceed limit, remove oldest entries
+    const newMemory = (value?.length || 0) * 2
+    while (this.memoryEstimate + newMemory > this.maxMemory && this.cache.size > 0) {
+      const firstKey = this.cache.keys().next().value
+      const firstValue = this.cache.get(firstKey)
+      this.cache.delete(firstKey)
+      this.memoryEstimate -= (firstValue?.length || 0) * 2
+    }
+
+    this.cache.set(key, value)
+    this.memoryEstimate += newMemory
+  }
+
+  clear() {
+    this.cache.clear()
+    this.memoryEstimate = 0
+  }
+
+  get size() {
+    return this.cache.size
+  }
+}
+
 // Cache to avoid reading files multiple times
 const cache = {
   assetInfo: new Map(),
-  fileContent: new Map(),
+  fileContent: null, // Will be initialized as LRU cache
   scanResults: null,
-  clearCache () {
+  searchableAssets: null, // Cache searchable assets from asset-db
+  cachedSearchPath: null, // Track which search path was cached
+  searchMethod: null, // Track which method is being used
+
+  // Configurable limits - adjust based on project size
+  maxCacheSize: 2000, // Increased from 500 to handle larger projects
+  maxMemory: 200 * 1024 * 1024, // Increased to 200MB for large projects
+
+  initFileCache() {
+    if (!this.fileContent) {
+      this.fileContent = new LRUCache(this.maxCacheSize, this.maxMemory)
+      console.log(`[Asset Analyzer] Cache initialized: max ${this.maxCacheSize} files, ${Math.round(this.maxMemory / 1024 / 1024)}MB memory`)
+    }
+  },
+
+  clearCache() {
     this.assetInfo.clear()
-    this.fileContent.clear()
+    if (this.fileContent) {
+      this.fileContent.clear()
+    }
     this.scanResults = null
+    this.searchableAssets = null
+    this.cachedSearchPath = null
+    this.searchMethod = null
+    console.log('[Asset Analyzer] All caches cleared')
+  },
+
+  clearSearchCache() {
+    this.searchableAssets = null
+    this.cachedSearchPath = null
+    console.log('[Asset Analyzer] Search cache cleared')
+  },
+
+  clearFileContentCache() {
+    if (this.fileContent) {
+      const stats = this.getCacheStats()
+      this.fileContent.clear()
+      console.log(`[Asset Analyzer] File content cache cleared (freed ${stats.memory}MB memory)`)
+    }
+  },
+
+  addFileToCache(filePath, content) {
+    this.initFileCache()
+    this.fileContent.set(filePath, content)
+  },
+
+  getFileFromCache(filePath) {
+    this.initFileCache()
+    return this.fileContent.get(filePath)
+  },
+
+  getCacheStats() {
+    if (!this.fileContent) return { size: 0, memory: 0 }
+    return {
+      size: this.fileContent.size,
+      maxSize: this.maxCacheSize,
+      memory: Math.round(this.fileContent.memoryEstimate / 1024 / 1024), // MB
+      maxMemory: Math.round(this.maxMemory / 1024 / 1024) // MB
+    }
   }
 }
 
 // Supported file extensions
 const SUPPORTED_ASSET_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp', '.prefab', '.scene', '.json', '.mp3', '.wav', '.ogg', '.fnt', '.atlas']
-const SEARCHABLE_EXTENSIONS = ['.prefab', '.scene', '.fire', '.json']
+const SEARCHABLE_EXTENSIONS = ['.prefab', '.scene', '.fire', '.json', '.mtl', '.anim']
 
 // Load external template and embed CSS
 const cssContent = fs.readFileSync(path.join(__dirname, 'panel.css'), 'utf8')
@@ -58,9 +171,9 @@ exports.$ = {
 
 exports.methods = {
   // Add debounce to prevent spam clicks
-  debounce (func, wait) {
+  debounce(func, wait) {
     let timeout
-    return function executedFunction (...args) {
+    return function executedFunction(...args) {
       const later = () => {
         clearTimeout(timeout)
         func.apply(this, args)
@@ -71,26 +184,26 @@ exports.methods = {
   },
 
   // Use Cocos Creator console instead of custom log
-  logLine (msg, type = 'info', parent) {
+  logLine(msg, type = 'info', parent) {
     // Log to Cocos Creator console
     switch (type) {
-    case 'error':
-      console.error(`[Asset Analyzer] ${msg}`)
-      break
-    case 'warning':
-      console.warn(`[Asset Analyzer] ${msg}`)
-      break
-    case 'success':
-      console.log(`[Asset Analyzer] ✅ ${msg}`)
-      break
-    default:
-      console.log(`[Asset Analyzer] ${msg}`)
-      break
+      case 'error':
+        console.error(`[Asset Analyzer] ${msg}`)
+        break
+      case 'warning':
+        console.warn(`[Asset Analyzer] ${msg}`)
+        break
+      case 'success':
+        console.log(`[Asset Analyzer] ✅ ${msg}`)
+        break
+      default:
+        console.log(`[Asset Analyzer] ${msg}`)
+        break
     }
   },
 
   // Replace autoScrollToBottom with autoScrollToTop
-  autoScrollToTop () {
+  autoScrollToTop() {
     const resultsBody = this.$.resultsBody
     const scrollIndicator = this.$.scrollIndicator
 
@@ -115,7 +228,7 @@ exports.methods = {
     }
   },
 
-  clearAll () {
+  clearAll() {
     // Clear everything for new scan
     this.$.resultsBody.innerHTML = ''
 
@@ -128,7 +241,7 @@ exports.methods = {
     cache.clearCache()
   },
 
-  toggleTreeView () {
+  toggleTreeView() {
     const treeContainer = this.$.treeContainer
     const separator = this.$.resultsSeparator
     const showTreeBtn = this.$.btnShowTree
@@ -152,21 +265,7 @@ exports.methods = {
     }
   },
 
-  // Re-render results from cache when checkbox changes
-  reRenderResults () {
-    if (!cache.scanResults) {
-      this.logLine('⚠️ No data to display. Please run analysis first!', 'warning')
-      return
-    }
-
-    // Clear existing display
-    this.$.resultsBody.innerHTML = ''
-
-    // Re-render with current settings
-    this.displayResults(cache.scanResults, cache.scanResults.rootPath)
-  },
-
-  updateProgress (current, total, currentFile = '') {
+  updateProgress(current, total, currentFile = '') {
     const percent = total > 0 ? Math.floor((current / total) * 100) : 0
     this.$.progressFill.style.width = percent + '%'
 
@@ -187,7 +286,7 @@ exports.methods = {
     this.$.progressText.textContent = progressText
   },
 
-  updateStats (stats) {
+  updateStats(stats) {
     this.$.statTotal.textContent = stats.total
     this.$.statUsed.textContent = stats.used
     this.$.statTime.textContent = stats.time + 's'
@@ -207,7 +306,7 @@ exports.methods = {
     }
   },
 
-  setButtonsEnabled (enabled) {
+  setButtonsEnabled(enabled) {
     this.$.btnScan.disabled = !enabled
     this.$.btnScan.innerHTML = enabled ? '🔍 Analyze' : '⏳ Analyzing...'
     this.$.btnMoveUnused.disabled = !enabled
@@ -216,14 +315,14 @@ exports.methods = {
   },
 
   // Get temp folder path
-  getTempFolderPath (scanPath) {
+  getTempFolderPath(scanPath) {
     const parentDir = path.dirname(scanPath)
     const scanFolderName = path.basename(scanPath)
     return path.join(parentDir, `${scanFolderName}_temp_unused`)
   },
 
   // Re-render results from cache when checkbox changes
-  reRenderResults () {
+  reRenderResults() {
     if (!cache.scanResults) {
       this.logLine('⚠️ No data to display. Please run analysis first!', 'warning')
       return
@@ -239,7 +338,7 @@ exports.methods = {
     this.displayResults(cache.scanResults, cache.scanResults.rootPath)
   },
 
-  async moveUnusedToTemp () {
+  async moveUnusedToTemp() {
     if (!cache.scanResults) {
       this.logLine('⚠️ No scan data available. Please run analysis first!', 'warning')
       return
@@ -251,6 +350,24 @@ exports.methods = {
 
     if (unusedAssets.length === 0) {
       this.logLine('ℹ️ No unused assets to move.', 'info')
+      return
+    }
+
+    // Confirmation dialog
+    const relativeTempPath = path.relative(Editor.Project.path, tempPath)
+    const confirmed = await new Promise((resolve) => {
+      const result = confirm(
+        `⚠️ Move ${unusedAssets.length} unused assets to temp folder?\n\n` +
+        `From: ${path.relative(Editor.Project.path, scanPath)}\n` +
+        `To: ${relativeTempPath}\n\n` +
+        `You can restore them later using the "Restore" button.\n\n` +
+        `Continue?`
+      )
+      resolve(result)
+    })
+
+    if (!confirmed) {
+      this.logLine('ℹ️ Move operation cancelled by user.', 'info')
       return
     }
 
@@ -382,7 +499,7 @@ exports.methods = {
     }
   },
 
-  async restoreFromTemp () {
+  async restoreFromTemp() {
     if (!cache.scanResults) {
       this.logLine('⚠️ No scan data available. Please run analysis first!', 'warning')
       return
@@ -458,7 +575,7 @@ exports.methods = {
     }
   },
 
-  async deleteTemp () {
+  async deleteTemp() {
     if (!cache.scanResults) {
       this.logLine('⚠️ No scan data available. Please run analysis first!', 'warning')
       return
@@ -500,7 +617,7 @@ exports.methods = {
   },
 
   // Helper function to move file
-  async moveFile (source, target) {
+  async moveFile(source, target) {
     return new Promise((resolve, reject) => {
       fs.rename(source, target, (err) => {
         if (err) {
@@ -513,7 +630,7 @@ exports.methods = {
   },
 
   // Get all files in directory recursively
-  async getAllFilesInDirectory (dir) {
+  async getAllFilesInDirectory(dir) {
     const files = []
 
     const walkDir = (currentDir) => {
@@ -536,7 +653,7 @@ exports.methods = {
   },
 
   // Clean up empty directories
-  async cleanupEmptyDirectories (rootPath) {
+  async cleanupEmptyDirectories(rootPath) {
     const cleanupDir = (dir) => {
       if (!fs.existsSync(dir)) return
 
@@ -564,7 +681,7 @@ exports.methods = {
     cleanupDir(rootPath)
   },
 
-  async scanAssets () {
+  async scanAssets() {
     const startTime = Date.now()
     this.setButtonsEnabled(false)
     this.clearAll() // Clear everything when starting new scan
@@ -638,6 +755,22 @@ exports.methods = {
 
       this.updateStats(stats)
       this.logLine(`✅ Analysis complete! Processed ${stats.total} assets in ${duration}s`, 'success')
+
+      // Log search method used
+      if (cache.searchMethod) {
+        const methodName = cache.searchMethod === 'asset-db-api' ? 'Cocos asset-db API' : 'File system search'
+        this.logLine(`🔍 Search method: ${methodName}`, 'info')
+      }
+
+      // Log cache statistics before clearing
+      const cacheStats = cache.getCacheStats()
+      this.logLine(`📦 Cache: ${cacheStats.size}/${cacheStats.maxSize} files, ${cacheStats.memory}/${cacheStats.maxMemory}MB used`, 'info')
+
+      // Clear file content cache to free memory (no longer needed after analysis)
+      if (cacheStats.memory > 0) {
+        cache.clearFileContentCache()
+        this.logLine('🧹 File content cache cleared to free memory', 'success')
+      }
     } catch (error) {
       this.logLine(`❌ Analysis error: ${error.message}`, 'error')
       console.error('Scan error:', error)
@@ -647,7 +780,7 @@ exports.methods = {
     }
   },
 
-  async displayResults (results, rootPath) {
+  async displayResults(results, rootPath) {
     this.logLine('🌳 Generating tree view...', 'info')
 
     // Build tree structure
@@ -686,7 +819,7 @@ exports.methods = {
   },
 
   // Build tree structure from flat results
-  buildDirectoryTree (results) {
+  buildDirectoryTree(results) {
     const tree = {}
 
     results.forEach(result => {
@@ -720,7 +853,7 @@ exports.methods = {
   },
 
   // Render tree structure
-  renderTreeFolder (folderName, folderData, level = 0) {
+  renderTreeFolder(folderName, folderData, level = 0) {
     const showUsed = this.$.chkUsed.checked
     const showUnused = this.$.chkUnused.checked
     const showDetails = this.$.chkDetails.checked
@@ -793,7 +926,7 @@ exports.methods = {
     return null
   },
 
-  createAssetItem (asset, showDetails) {
+  createAssetItem(asset, showDetails) {
     const assetItem = document.createElement('div')
     assetItem.className = `asset-item ${asset.isUsed ? 'used' : 'unused'}`
 
@@ -863,7 +996,7 @@ exports.methods = {
   },
 
   // Helper function to select text
-  selectText (element) {
+  selectText(element) {
     if (window.getSelection) {
       const selection = window.getSelection()
       const range = document.createRange()
@@ -874,7 +1007,7 @@ exports.methods = {
   },
 
   // Helper function to copy to clipboard
-  async copyToClipboard (text) {
+  async copyToClipboard(text) {
     try {
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(text)
@@ -897,7 +1030,7 @@ exports.methods = {
   },
 
   // Show copy feedback
-  showCopyFeedback (element) {
+  showCopyFeedback(element) {
     const originalText = element.textContent
     element.textContent = 'Copied!'
     element.style.color = '#4CAF50'
@@ -910,38 +1043,7 @@ exports.methods = {
     }, 1500)
   },
 
-  async displayResults (results, rootPath) {
-    // Build tree structure
-    const tree = this.buildDirectoryTree(results)
-
-    // Render tree
-    Object.keys(tree)
-      .sort()
-      .forEach(folderName => {
-        if (folderName === '__assets__') {
-          // Root level assets
-          tree.__assets__.forEach(asset => {
-            const showUsed = this.$.chkUsed.checked
-            const showUnused = this.$.chkUnused.checked
-            const showDetails = this.$.chkDetails.checked
-
-            if ((!asset.isUsed && !showUnused) || (asset.isUsed && !showUsed)) {
-              return
-            }
-
-            const assetItem = this.createAssetItem(asset, showDetails)
-            this.$.resultsBody.appendChild(assetItem)
-          })
-        } else {
-          const folderElement = this.renderTreeFolder(folderName, tree[folderName].children, 0)
-          if (folderElement) {
-            this.$.resultsBody.appendChild(folderElement)
-          }
-        }
-      })
-  },
-
-  async getAssetInfo (uuid) {
+  async getAssetInfo(uuid) {
     if (cache.assetInfo.has(uuid)) {
       return cache.assetInfo.get(uuid)
     }
@@ -956,7 +1058,7 @@ exports.methods = {
     }
   },
 
-  async buildAssetList (rootPath) {
+  async buildAssetList(rootPath) {
     const assets = []
 
     const walkDir = (dir) => {
@@ -999,7 +1101,7 @@ exports.methods = {
   },
 
   // Check skeleton animation and font dependencies
-  async checkSkeletonDependencies (assetList, usedAssets = new Set()) {
+  async checkSkeletonDependencies(assetList, usedAssets = new Set(), searchPath = null) {
     const skeletonGroups = new Map() // Map from skeleton name → {json, atlas, textures}
 
     // Group skeleton files by base name
@@ -1051,10 +1153,10 @@ exports.methods = {
       }
     }
 
-    // Check which skeleton json files are used
+    // Check which skeleton json files are used (respect searchPath)
     for (const [baseName, group] of skeletonGroups) {
       if (group.json) {
-        const jsonRefs = await this.checkUUIDUsage(group.json.uuid)
+        const jsonRefs = await this.checkUUIDUsage(group.json.uuid, searchPath)
         if (jsonRefs.length > 0) {
           // JSON is used → mark atlas and textures as used
           if (group.atlas) {
@@ -1071,26 +1173,28 @@ exports.methods = {
   },
 
   // Check font file dependencies
-  async checkFontDependencies (assetList, usedAssets = new Set()) {
+  async checkFontDependencies(assetList, usedAssets = new Set(), searchPath = null) {
     for (const asset of assetList) {
       const ext = path.extname(asset.path).toLowerCase()
 
       if (ext === '.fnt') {
         try {
-          const fntContent = fs.readFileSync(asset.path, 'utf8')
-          const lines = fntContent.split('\n')
+          // Check if .fnt file is used (check once per font, respect searchPath)
+          const fntRefs = await this.checkUUIDUsage(asset.uuid, searchPath)
 
-          for (const line of lines) {
-            // Find page line (texture file)
-            const pageMatch = line.match(/page\s+id=\d+\s+file="([^"]+)"/)
-            if (pageMatch) {
-              const textureFile = pageMatch[1]
-              const texturePath = path.resolve(path.dirname(asset.path), textureFile)
+          if (fntRefs.length > 0) {
+            // FNT is used → collect and mark all textures as used
+            const fntContent = fs.readFileSync(asset.path, 'utf8')
+            const lines = fntContent.split('\n')
 
-              // Check if .fnt file is used
-              const fntRefs = await this.checkUUIDUsage(asset.uuid)
-              if (fntRefs.length > 0) {
-                // FNT is used → mark texture as used
+            for (const line of lines) {
+              // Find page line (texture file)
+              const pageMatch = line.match(/page\s+id=\d+\s+file="([^"]+)"/)
+              if (pageMatch) {
+                const textureFile = pageMatch[1]
+                const texturePath = path.resolve(path.dirname(asset.path), textureFile)
+
+                // Mark texture as used
                 const textureUuid = await this.getAssetUuidByPath(texturePath)
                 if (textureUuid) {
                   usedAssets.add(textureUuid)
@@ -1108,7 +1212,7 @@ exports.methods = {
   },
 
   // Helper function to find UUID from file path
-  async getAssetUuidByPath (filePath) {
+  async getAssetUuidByPath(filePath) {
     const metaPath = filePath + '.meta'
     if (fs.existsSync(metaPath)) {
       try {
@@ -1122,17 +1226,17 @@ exports.methods = {
     return null
   },
 
-  async processAssetsBatch (assetList, searchPath = null) {
+  async processAssetsBatch(assetList, searchPath = null) {
     const results = []
     const batchSize = 10
     const dependencyUsedAssets = new Set() // Track assets used as dependencies
 
     // First pass: Find all dependency relationships
     this.logLine('📎 Analyzing skeleton animation dependencies...', 'info')
-    await this.checkSkeletonDependencies(assetList, dependencyUsedAssets)
+    await this.checkSkeletonDependencies(assetList, dependencyUsedAssets, searchPath)
 
     this.logLine('🔤 Analyzing font file dependencies...', 'info')
-    await this.checkFontDependencies(assetList, dependencyUsedAssets)
+    await this.checkFontDependencies(assetList, dependencyUsedAssets, searchPath)
 
     // Second pass: Check usage including dependencies
     for (let i = 0; i < assetList.length; i += batchSize) {
@@ -1165,17 +1269,108 @@ exports.methods = {
     return results
   },
 
-  async checkUUIDUsage (uuid, searchPath = null) {
+  async checkUUIDUsage(uuid, searchPath = null) {
     try {
-      const refs = await this.searchUUIDInProject(uuid, searchPath)
-      return refs
+      // Try using asset-db API first (faster and more accurate)
+      const refs = await this.searchUUIDUsingAssetDB(uuid, searchPath)
+      if (refs !== null) {
+        return refs
+      }
+
+      // Fallback to file system search if API fails
+      console.log(`[Asset Analyzer] Fallback to file search for ${uuid}`)
+      return await this.searchUUIDInProject(uuid, searchPath)
     } catch (err) {
       console.error(`Error checking UUID ${uuid}:`, err)
       return []
     }
   },
 
-  async searchUUIDInProject (uuid, searchPath = null) {
+  // New method: Use Cocos Creator asset-db API to search UUID
+  async searchUUIDUsingAssetDB(uuid, searchPath = null) {
+    try {
+      const refs = []
+
+      // Check if searchPath changed, clear cache if needed
+      if (cache.cachedSearchPath !== searchPath) {
+        if (cache.searchableAssets) {
+          this.logLine('🔄 Search path changed, clearing search cache...', 'info')
+        }
+        cache.clearSearchCache()
+        cache.cachedSearchPath = searchPath
+      }
+
+      // Cache searchable assets list (query once, reuse for all UUIDs)
+      if (!cache.searchableAssets) {
+        // Query all assets from asset-db
+        const pattern = searchPath ?
+          `db://${path.relative(Editor.Project.path, searchPath).replace(/\\/g, '/')}/**/*` :
+          'db://assets/**/*'
+
+        const scopeMsg = searchPath ? path.relative(Editor.Project.path, searchPath) : 'entire project'
+        this.logLine(`🔌 Using Cocos asset-db API (scope: ${scopeMsg})`, 'info')
+
+        // Get all assets in the search scope
+        const allAssets = await new Promise((resolve, reject) => {
+          Editor.Message.request('asset-db', 'query-assets', {
+            pattern: pattern
+          }).then(resolve).catch(reject)
+        })
+
+        if (!allAssets || allAssets.length === 0) {
+          this.logLine('⚠️ Asset-db query returned no results, using file search', 'warning')
+          cache.searchMethod = 'file-search'
+          return null // Fallback to file search
+        }
+
+        // Filter only searchable types
+        cache.searchableAssets = allAssets.filter(asset => {
+          if (!asset || !asset.file) return false
+          const ext = path.extname(asset.file).toLowerCase()
+          return SEARCHABLE_EXTENSIONS.includes(ext)
+        })
+
+        cache.searchMethod = 'asset-db-api'
+        this.logLine(`✅ Found ${cache.searchableAssets.length} searchable assets via API`, 'success')
+      }
+
+      // Search UUID in cached searchable assets
+      let processed = 0
+      for (const asset of cache.searchableAssets) {
+        processed++
+
+        try {
+          const filePath = asset.file
+          let content = cache.getFileFromCache(filePath)
+
+          if (!content) {
+            content = fs.readFileSync(filePath, 'utf8')
+            cache.addFileToCache(filePath, content)
+          }
+
+          if (content.includes(uuid)) {
+            refs.push(filePath)
+          }
+        } catch (e) {
+          // Ignore read errors
+        }
+
+        // Yield control every 100 files
+        if (processed % 100 === 0) {
+          await new Promise(resolve => setTimeout(resolve, 0))
+        }
+      }
+
+      return refs
+    } catch (error) {
+      console.warn('[Asset Analyzer] Asset-DB API failed, falling back to file search:', error.message)
+      cache.searchMethod = 'file-search'
+      this.logLine('⚠️ Asset-db API error, using file search fallback', 'warning')
+      return null // Signal to use fallback method
+    }
+  },
+
+  async searchUUIDInProject(uuid, searchPath = null) {
     const refs = []
     const projectPath = Editor.Project.path
 
@@ -1186,7 +1381,7 @@ exports.methods = {
     return refs
   },
 
-  async searchUUIDInFolder (folderPath, uuid, refs) {
+  async searchUUIDInFolder(folderPath, uuid, refs) {
     if (!fs.existsSync(folderPath)) return
 
     const files = fs.readdirSync(folderPath)
@@ -1201,10 +1396,10 @@ exports.methods = {
         const ext = path.extname(file).toLowerCase()
         if (SEARCHABLE_EXTENSIONS.includes(ext)) {
           try {
-            let content = cache.fileContent.get(fullPath)
+            let content = cache.getFileFromCache(fullPath)
             if (!content) {
               content = fs.readFileSync(fullPath, 'utf8')
-              cache.fileContent.set(fullPath, content)
+              cache.addFileToCache(fullPath, content)
             }
 
             if (content.includes(uuid)) {
@@ -1218,12 +1413,12 @@ exports.methods = {
     }
   },
 
-  openAllCollapsible () {
+  openAllCollapsible() {
     const details = this.$.resultsBody.querySelectorAll('details')
     details.forEach(detail => detail.open = true)
   },
 
-  closeAllCollapsible () {
+  closeAllCollapsible() {
     const details = this.$.resultsBody.querySelectorAll('details')
     details.forEach(detail => detail.open = false)
   }

@@ -906,6 +906,21 @@ exports.methods = {
         this.$.statWebpImages.textContent = '0'
     },
 
+    // Clear folderAsset selection
+    clearFolderAsset() {
+        this.$.folderAsset.value = null;
+        this.$.folderAsset._value = null;
+    },
+
+    // Clear custom input folder selection
+    clearCustomInputFolder() {
+        this.customInputPath = null;
+        this.$.inputFolderPath.textContent = 'No folder selected';
+        this.$.inputFolderPath.className = 'path-text';
+        this.$.inputFolderPath.title = '';
+        this.$.inputFolderInput.value = '';
+    },
+
     // Lấy file ảnh theo loại được chọn
     getSelectedImageTypes() {
         const selectedTypes = []
@@ -1270,11 +1285,19 @@ exports.ready = function () {
     this.$.btnSelectInput.addEventListener('click', () => {
         // Reset stats when selecting new input folder
         this.resetImageStats()
+        
+        // Clear folderAsset when custom input is used
+        this.clearFolderAsset()
+        
         this.selectInputFolder()
     })
     this.$.inputFolderInput.addEventListener('change', (e) => {
         // Reset stats when folder changes via file input
         this.resetImageStats()
+        
+        // Clear folderAsset when custom input is used
+        this.clearFolderAsset()
+        
         this.handleInputFolderSelect(e)
     })
     
@@ -1287,6 +1310,9 @@ exports.ready = function () {
     this.$.folderAsset.addEventListener('change', () => {
         // Reset stats when folder changes
         this.resetImageStats()
+        
+        // Clear custom input folder when folderAsset is used
+        this.clearCustomInputFolder()
         
         // Small delay to ensure the value is set
         setTimeout(() => {

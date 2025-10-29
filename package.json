@@ -62,5 +62,8 @@
     },
     "dependencies": {
         "tinify": "^1.8.2"
+    },
+    "scripts": {
+        "build": "bash build.sh"
     }
 }
