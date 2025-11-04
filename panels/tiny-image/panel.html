@@ -97,32 +97,30 @@
 
       <!-- Input Section -->
       <div class="input-section">
-        <div class="scan-input">
-          <span class="scan-label">Input Folder:</span>
-          <div class="folder-input-container">
-            <div class="input-controls">
-              <ui-asset
-                droppable="cc.Asset"
-                id="folderAsset"
-                placeholder="Drag folder here or click to browse..."
-              ></ui-asset>
-            </div>
-            <input
-              type="file"
-              id="inputFolderInput"
-              webkitdirectory
-              style="display: none"
-            />
-            <div class="input-folder-controls">
-              <button id="btnSelectInput" class="folder-select">
-                <span>📁</span>
-                <span>Choose Folder</span>
-              </button>
-              <div class="input-path-display">
-                <span id="inputFolderPath" class="path-text"
-                  >No folder selected</span
-                >
-              </div>
+        <span class="scan-label">Input Folder:</span>
+        <div class="folder-input-container">
+          <div class="input-controls">
+            <ui-asset
+              droppable="cc.Asset"
+              id="folderAsset"
+              placeholder="Drag folder here or click to browse..."
+            ></ui-asset>
+          </div>
+          <input
+            type="file"
+            id="inputFolderInput"
+            webkitdirectory
+            style="display: none"
+          />
+          <div class="input-folder-controls">
+            <button id="btnSelectInput" class="folder-select">
+              <span>📁</span>
+              <span>Choose Folder</span>
+            </button>
+            <div class="input-path-display">
+              <span id="inputFolderPath" class="path-text"
+                >No folder selected</span
+              >
             </div>
           </div>
         </div>

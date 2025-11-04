@@ -1,6 +1,7 @@
 {
+    "package_version": 2,
+    "version": "0.0.1",
     "name": "baby-tools",
-    "version": "1.0.0",
     "description": "Cocos Creator Extension: TinyPNG Optimizer & Asset Analyzer",
     "author": "SaiGon1975",
     "license": "MIT",
@@ -41,6 +42,20 @@
             "flags": {
                 "alwaysOnTop": true
             }
+        },
+        "replace-default-ui-uuid": {
+            "title": "Replace Default UI UUID",
+            "main": "./panels/replace-default-ui-uuid/panel.js",
+            "type": "dockable",
+            "size": {
+                "width": 500,
+                "height": 800,
+                "min-width": 400,
+                "min-height": 700
+            },
+            "flags": {
+                "alwaysOnTop": true
+            }
         }
     },
     "contributions": {
@@ -54,6 +69,11 @@
                 "path": "BabyTools",
                 "label": "🧹 Check Unused Assets",
                 "message": "open-check-unused-assets"
+            },
+            {
+                "path": "BabyTools",
+                "label": "🔄 Replace Default UI UUID",
+                "message": "open-replace-default-ui-uuid"
             }
         ],
         "messages": {
@@ -65,6 +85,11 @@
             "open-check-unused-assets": {
                 "methods": [
                     "openCheckUnusedAssets"
+                ]
+            },
+            "open-replace-default-ui-uuid": {
+                "methods": [
+                    "openReplaceDefaultUIUUID"
                 ]
             }
         }

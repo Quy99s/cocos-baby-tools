@@ -8,4 +8,7 @@ exports.methods = {
   openCheckUnusedAssets() {
     Editor.Panel.open('baby-tools.check-unused-assets');
   },
+  openReplaceDefaultUIUUID() {
+    Editor.Panel.open('baby-tools.replace-default-ui-uuid');
+  },
 };

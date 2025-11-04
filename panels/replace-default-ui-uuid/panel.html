@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="./panel.css" />
+  </head>
+  <body>
+    <div class="header">
+      <h2 class="title">
+        <span>🔄</span>
+        <span>Replace Default UI UUID</span>
+      </h2>
+    </div>
+
+    <!-- Folder Selection Section -->
+    <div class="scan-section">
+      <!-- Folder Settings Header -->
+      <div class="folder-header">
+        <h3>📁 Folder Configuration</h3>
+      </div>
+
+      <!-- Input Section -->
+      <div class="input-section">
+        <span class="scan-label">Input Folder:</span>
+        <div class="folder-input-container">
+          <div class="input-controls">
+            <ui-asset
+              droppable="cc.Asset"
+              id="folderAsset"
+              placeholder="Drag folder here or click to browse..."
+            ></ui-asset>
+          </div>
+          <input
+            type="file"
+            id="inputFolderInput"
+            webkitdirectory
+            style="display: none"
+          />
+        </div>
+      </div>
+
+      <!-- Progress Section -->
+      <div class="progress-container" id="progressContainer">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-text" id="progressText">Ready to replace...</div>
+      </div>
+    </div>
+
+    <!-- Output Section -->
+    <div class="main-controls" style="height: 40px">
+      <button
+        id="btnRun"
+        class="primary"
+        style="font-size: 18px; padding: 12px 22px; height: auto"
+      >
+        <span style="font-size: 20px">🚀</span>
+        <span>Run Replace</span>
+      </button>
+    </div>
+
+    <!-- Log Section -->
+    <div class="results-section">
+      <div class="results-header">
+        <span>📝 Replace Log</span>
+        <div class="results-controls">
+          <button id="btnClearLog" class="small">🧹 Clear</button>
+        </div>
+      </div>
+      <div class="results-body" id="log"></div>
+    </div>
+  </body>
+</html>
