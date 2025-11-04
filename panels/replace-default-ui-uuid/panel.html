@@ -27,7 +27,7 @@
             <ui-asset
               droppable="cc.Asset"
               id="folderAsset"
-              placeholder="Drag folder here or click to browse..."
+              placeholder="Drag folder here or click to browse... (Leave empty to use all assets)"
             ></ui-asset>
           </div>
           <input
@@ -36,6 +36,10 @@
             webkitdirectory
             style="display: none"
           />
+        </div>
+        <div class="folder-url-container">
+          <span class="folder-url-label">Folder URL:</span>
+          <div id="folderUrlDisplay" class="folder-url-display">Loading...</div>
         </div>
       </div>
 

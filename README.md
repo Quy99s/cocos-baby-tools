@@ -2,15 +2,13 @@
 
 > **From SaiGon1975 With Love ❤️**
 
-## 🚀 Cài đặt nhanh
+## Setup
 
-1. Copy folder `cocos-baby-tools` vào `extensions/` của dự án
-2. **Chạy lệnh:**
+1. Copy folder `cocos-baby-tools` into `extensions/` of the project
+2. **Run CMD:**
    ```bash
    cd extensions/cocos-baby-tools
    npm install
    ```
 3. Restart Cocos Creator
-4. Truy cập: `Extension > BabyTools`
-
----
+4. Access: `Extension > BabyTools`

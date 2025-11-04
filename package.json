@@ -98,10 +98,6 @@
         "tinify": "^1.8.2"
     },
     "devDependencies": {},
-    "scripts": {
-        "build": "bash build.sh",
-        "clean": "rm -rf build/*.zip build/temp"
-    },
     "engines": {
         "node": ">=12.0.0"
     }
