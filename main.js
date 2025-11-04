@@ -2,13 +2,13 @@
 
 exports.methods = {
   openTinyImage() {
-    Editor.Panel.open('baby-tools.tiny-image');
+    Editor.Panel.open('cc30-all-tools.tiny-image');
   },
 
   openCheckUnusedAssets() {
-    Editor.Panel.open('baby-tools.check-unused-assets');
+    Editor.Panel.open('cc30-all-tools.check-unused-assets');
   },
   openReplaceDefaultUIUUID() {
-    Editor.Panel.open('baby-tools.replace-default-ui-uuid');
+    Editor.Panel.open('cc30-all-tools.replace-default-ui-uuid');
   },
 };

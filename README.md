@@ -4,7 +4,7 @@
 
 ## Setup
 
-1. Copy folder `cocos-baby-tools` into `extensions/` of the project
+1. Copy folder `cc30-all-tools` into `extensions/` of the project
 2. **Run CMD:**
    ```bash
    cd extensions/cocos-baby-tools

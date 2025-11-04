@@ -1,8 +1,8 @@
 {
     "package_version": 2,
     "version": "0.0.1",
-    "name": "baby-tools",
-    "description": "Cocos Creator Extension: TinyPNG Optimizer & Asset Analyzer",
+    "name": "cc30-all-tools",
+    "description": "Cocos Creator Extension: All Tools",
     "author": "SaiGon1975",
     "license": "MIT",
     "main": "./main.js",
@@ -61,17 +61,17 @@
     "contributions": {
         "menu": [
             {
-                "path": "BabyTools",
+                "path": "cc30 All Tools",
                 "label": "🖼️ Tiny Image",
                 "message": "open-tiny-image"
             },
             {
-                "path": "BabyTools",
+                "path": "cc30 All Tools",
                 "label": "🧹 Check Unused Assets",
                 "message": "open-check-unused-assets"
             },
             {
-                "path": "BabyTools",
+                "path": "cc30 All Tools",
                 "label": "🔄 Replace Default UI UUID",
                 "message": "open-replace-default-ui-uuid"
             }
